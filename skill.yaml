@@ -1,0 +1,5 @@
+name: "spoken_english_assessment"
+title: "儿童英语口语测评"
+description: "Turn a child's English speaking recording into a two-page A4 report: native-audio acoustic measurement and ASR cross-checking, a six-dimension rubric aligned to IELTS/Cambridge Starters/CEFR with red-flower banding instead of scores, a growth-record front page and a Swiss-style benchmark back page."
+category: "Work and knowledge"
+include_in_prompt: true

@@ -1,0 +1,7 @@
+assets/fonts/*.ttf
+assets/fonts/.dl/
+report-front.pdf
+report-back.pdf
+report.pdf
+benchmark-internal.pdf
+__pycache__/
