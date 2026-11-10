@@ -9,3 +9,4 @@
 把 `audio_data.json` 放在案例目录、配合仓库根目录的字体运行 `scripts/build_front.py`
 与 `scripts/build_back.py`，即可复现该报告（报告内容即两脚本中的案例段落；
 本范例的正面走模板的照片模式，需要案例目录中另有 `photo.jpg`）。
+同目录运行 `scripts/build_simple.py` 可另出简版一页（该脚本的案例数据即本范例）。
