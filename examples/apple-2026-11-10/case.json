@@ -1,0 +1,72 @@
+{
+  "name": "Apple",
+  "pro": "她",
+  "topic": "My Password",
+  "date": "2026.11.10",
+  "task": "speak",
+  "photo": "photo.jpg",
+  "overview": [
+    "讲了什么：她把「设一个密码」从头讲到尾，先挑词、再挑字母，最后拼出来揭晓。",
+    "最棒的：一件事从问好讲到道谢，顺序一步不乱，像个小老师。",
+    "说得怎么样：不慌不忙，没有「嗯、啊」，句子说完都稳稳收住。",
+    "要加油的：有几个词的最后一个音还没送出来，别人会听成别的词。"
+  ],
+  "mark": [
+    "eight",
+    "salad"
+  ],
+  "dims": [
+    [
+      "词汇",
+      "用得准",
+      4,
+      "本课词都用在对的地方：password、choose、letter、number；还自己挑了 chocolate 和 salad 当原料。"
+    ],
+    [
+      "句式与语法",
+      "挺稳当",
+      4,
+      "四步用 first、then、next、last 领着走，顺序不乱；小瑕疵一处：for me 应是 for myself。"
+    ],
+    [
+      "完整与创意",
+      "有头有尾",
+      5,
+      "开头、步骤、揭晓、道谢都齐；密码是自己拼的，不是背的。"
+    ],
+    [
+      "发音准确度",
+      "很清楚",
+      4,
+      "大意全被听懂；卡在词尾音：eight 被听成 ace，salad 被听成 said。"
+    ],
+    [
+      "流利度",
+      "很顺溜",
+      4,
+      "语速 3.1 音节/秒，没有「嗯、啊」；改了一次口，想字母时停了 1.4 秒。"
+    ],
+    [
+      "语调与重音",
+      "有起伏",
+      4,
+      "跨度 11.6 个半音，句尾多是降调、稳稳落地；salad 的重音落到了后面。"
+    ]
+  ],
+  "goal": "把词尾音补齐：eight 的 t、salad 的 d 都念出来。",
+  "games": [
+    [
+      "词尾音大扫除",
+      "eight、next、salad 慢慢念，送出词尾的 t、d。"
+    ],
+    [
+      "步骤词讲故事",
+      "用 first、then、next、last，把泡牛奶或穿衣服讲成四步。"
+    ],
+    [
+      "拼一个新密码",
+      "挑两个喜欢的词，各取两字母，加两个数字，拼出来念给大家听。"
+    ]
+  ],
+  "script": "Hello everyone, my name is Apple. I want to set a password for me. First, I choose two words: chocolate and salad. Then I choose two letters C E from chocolate. I choose two letters A D from salad. Next, I choose two numbers: four and eight. And last, I put them together. My password is CEAD48. Thank you!"
+}

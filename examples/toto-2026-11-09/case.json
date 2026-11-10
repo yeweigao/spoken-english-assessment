@@ -1,0 +1,72 @@
+{
+  "name": "Toto",
+  "pro": "他",
+  "topic": "My Funny Face",
+  "date": "2026.11.09",
+  "task": "speak",
+  "photo": "portrait.png",
+  "overview": [
+    "讲了什么：他对着镜头介绍自己的「怪脸」，眼睛、眉毛、耳朵、嘴巴一个没落下。",
+    "最棒的：句子又长又稳，结尾还自己编了一句来夸自己。",
+    "说得怎么样：不慌不忙，没有「嗯、啊」，每句都稳稳收尾。",
+    "要加油的：有两个音还没出来，词就被听成了别的。"
+  ],
+  "mark": [
+    "mouth",
+    "oval"
+  ],
+  "dims": [
+    [
+      "词汇",
+      "用得准",
+      4,
+      "颜色、大小、数字都说得出：three、six 用对了，big、round 反复用得稳。"
+    ],
+    [
+      "句式与语法",
+      "挺稳当",
+      5,
+      "this 和 these 分工清楚，单复数没乱；最长一句 15 个词，一口气说完。"
+    ],
+    [
+      "完整与创意",
+      "有头有尾",
+      5,
+      "脸、眼睛、耳朵、嘴巴讲了一圈；结尾一句是自己编的。"
+    ],
+    [
+      "发音准确度",
+      "很清楚",
+      4,
+      "大意都听懂了；mouth 被听成 mouse——词尾 th 没出来；oval 的 v 也没出来，词没被听清。"
+    ],
+    [
+      "流利度",
+      "很顺溜",
+      4,
+      "语速约 2.5 音节/秒，没有「嗯、啊」；想词时停过几次，最长 2.8 秒。"
+    ],
+    [
+      "语调与重音",
+      "有起伏",
+      4,
+      "跨度 12.9 个半音，六句句尾全是降调、稳稳落地；YEL-low、SIL-ly 的重音都站对了。"
+    ]
+  ],
+  "goal": "把 mouth 的 th、oval 的 v 念出来。",
+  "games": [
+    [
+      "小舌头探险",
+      "对着镜子露一点舌尖说 mouth、teeth、three，专练词尾 th。"
+    ],
+    [
+      "蜜蜂 v 嗡嗡",
+      "上牙轻咬下唇说 oval、love、five，摸喉咙，有震动 v 就出来了。"
+    ],
+    [
+      "重音拍手",
+      "YEL-low、SIL-ly 第一下重拍、第二下轻带，再站起来喊出结尾句。"
+    ]
+  ],
+  "script": "Hi! I am Toto. This is my big round yellow face. These are my three big round blue eyes with six big black and yellow eyebrows. These are my two big pink ears. This is my big oval red mouth. I love the ugly, silly and scary me!"
+}

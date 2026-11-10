@@ -5,3 +5,6 @@ report-back.pdf
 report.pdf
 benchmark-internal.pdf
 __pycache__/
+assets/models/
+assets/*.log
+.venv/
