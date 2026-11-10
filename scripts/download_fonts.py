@@ -5,7 +5,7 @@ All four families are open-licensed (SIL OFL): Noto Sans SC, Inter, ZCOOL KuaiLe
 Patrick Hand. Sources are the google/fonts GitHub repository. The two variable
 fonts are instanced to the static weights the builders expect:
   Noto Sans SC -> NotoSC-Regular.ttf (wght 400), NotoSC-SemiB.ttf (wght 600)
-  Inter        -> Inter-Reg.ttf (wght 400),    Inter-BoldF.ttf (wght 700)
+  Inter        -> Inter-Reg.ttf (wght 400),    Inter-BoldF.ttf (wght 700), Inter-Light.ttf (wght 300)
 Skips files that already exist. Needs: fonttools (pip install fonttools)."""
 import os, sys, urllib.request
 
@@ -22,6 +22,7 @@ VARIABLE = {  # out_name -> (url, axis pins)
     'NotoSC-SemiB.ttf':   (f'{GF}/notosanssc/NotoSansSC%5Bwght%5D.ttf', {'wght': 600}),
     'Inter-Reg.ttf':      (f'{GF}/inter/Inter%5Bopsz%2Cwght%5D.ttf', {'opsz': 14, 'wght': 400}),
     'Inter-BoldF.ttf':    (f'{GF}/inter/Inter%5Bopsz%2Cwght%5D.ttf', {'opsz': 14, 'wght': 700}),
+    'Inter-Light.ttf':    (f'{GF}/inter/Inter%5Bopsz%2Cwght%5D.ttf', {'opsz': 14, 'wght': 300}),
 }
 
 def fetch(url, path):

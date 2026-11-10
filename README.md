@@ -20,11 +20,11 @@ python3 scripts/build_back.py
 python3 scripts/build_report.py            # 合并为 report.pdf
 ```
 
-完整规程（分析方法、量规、排版法、对外表述边界、验收清单）在 [SKILL.md](SKILL.md)；量规锚点在 [references/rubric.md](references/rubric.md)；完整范例在 [examples/toto-2026-11-09](examples/toto-2026-11-09)（出于隐私，范例不含孩子录音原件与成品 PDF，只保留实测数据）。
+完整规程（分析方法、量规、排版法、对外表述边界、验收清单）在 [SKILL.md](SKILL.md)；量规锚点在 [references/rubric.md](references/rubric.md)；版式与文字体系在 [references/type-system.md](references/type-system.md)；完整范例两个：[examples/toto-2026-11-09](examples/toto-2026-11-09)（纯音频）与 [examples/apple-2026-11-10](examples/apple-2026-11-10)（真实视频输入），出于隐私，范例不含录音/视频原件与成品 PDF，只保留实测数据。
 
 ## 结构
 
 - `SKILL.md` / `skill.yaml` — 技能规程（可直接作为 Muse skill 安装到 `~/workspace/custom-skills/` 或 `~/.claude/skills/` 类目录）
 - `scripts/` — 数据抽取、声学分析、正/背面生成、合并、字体下载、内部依据文件
-- `references/` — 六维量规、对外表述边界（内部）
+- `references/` — 六维量规、对外表述边界（内部）、文字与版式体系
 - `assets/fonts/` — 字体目录（由 download_fonts.py 填充，.gitignore 已排除）

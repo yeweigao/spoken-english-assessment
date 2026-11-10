@@ -24,6 +24,7 @@ def reg(name, fname, fallback=None):
     raise SystemExit('missing font ' + fname)
 
 pdfmetrics.registerFont(TTFont('SC', os.path.join(FONTDIR, 'NotoSC-Regular.ttf')))
+reg('ENL', 'Inter-Light.ttf', 'ENR')
 reg('SCB', 'NotoSC-SemiB.ttf', 'SC')
 reg('SCS', 'NotoSC-Regular.ttf', 'SC')
 reg('ENB', 'Inter-BoldF.ttf', 'SC')
@@ -82,6 +83,7 @@ def rrect(x, y, w, h, r, fill=None, stroke=None, swd=1):
 
 M = 34; CW = W - 2 * M
 c.setFillColor(CREAM); c.rect(0, 0, W, H, stroke=0, fill=1)
+c.saveState(); c.translate(0, 12)   # whole module above the games zone rides 12pt up
 
 # yellow blob top-right
 c.saveState(); c.translate(W - 120, H - 30); c.rotate(-4)
@@ -92,7 +94,7 @@ c.restoreState()
 hy = H - 56
 text(M + 2, hy, '2026 秋 · 口语测评', 'SCS', 8.5, SOFT)
 text(M, hy - 34, '英语口语成长记录', DISP, 30, INK)
-text(M + 2, hy - 52, 'My English Speaking Report', 'ENB', 10.5, SOFT)
+text(M + 2, hy - 52, 'My English Speaking Report', 'ENB', 11, SOFT)
 text(M + 2, hy - 74, '姓名 Toto  ·  课题 My Funny Face  ·  2026.11.09  ·  37 秒', 'SCS', 9.5, INK)
 
 # growth card
@@ -120,32 +122,46 @@ for i, (nm, col) in enumerate(stages):
         c.setFillColor(HexColor('#FFF3F8')); c.circle(cx, cy, 3, stroke=0, fill=1)
     text(cx - sw(nm, 'SCS', 8.5) / 2, gy + 2, nm, 'SCS', 8.5, INK if nm == '绽放' else SOFT)
 
-# ---------- polaroid with monster ----------
-top = hy - 88
-c.saveState(); c.translate(M + 74, top - 90); c.rotate(-2)
-rrect(-74, -90, 148, 180, 4, fill=CARD, stroke=LINE)
-c.setFillColor(HexColor('#EFEDF4')); c.rect(-62, -14, 124, 94, stroke=0, fill=1)
-# monster inside frame (center 0, 20; r 40)
-fcx, fcy, fr = 0, 26, 35
-c.setFillColor(PINK); c.setStrokeColor(INK); c.setLineWidth(1.8)
-c.circle(fcx - fr - 1, fcy + 4, 11.5, stroke=1, fill=1); c.circle(fcx + fr + 1, fcy + 4, 11.5, stroke=1, fill=1)
-c.setFillColor(YEL); c.circle(fcx, fcy, fr, stroke=1, fill=1)
-eye_pos = [(fcx - 20, fcy + 12), (fcx + 20, fcy + 12), (fcx, fcy + 23)]
-for i, (ex, ey) in enumerate(eye_pos):
-    for j, bx in enumerate([ex - 8.5, ex + 2.5]):
-        c.setStrokeColor(INK if (i + j) % 2 == 0 else YELD); c.setLineWidth(2.6); c.setLineCap(1)
-        c.line(bx, ey + 13.5, bx + 6, ey + 11.5)
-for (ex, ey) in eye_pos:
-    c.setFillColor(CARD); c.setStrokeColor(INK); c.setLineWidth(1.5); c.circle(ex, ey, 8, stroke=1, fill=1)
-    c.setFillColor(BLUE); c.circle(ex, ey, 4.2, stroke=0, fill=1)
-    c.setFillColor(INK); c.circle(ex, ey, 2, stroke=0, fill=1)
-c.setFillColor(RED); c.setStrokeColor(INK); c.setLineWidth(1.7)
-c.ellipse(fcx - 18, fcy - 31, fcx + 18, fcy - 12, stroke=1, fill=1)
-c.setFillColor(CARD); c.roundRect(fcx - 9, fcy - 19, 18, 5.4, 1.6, stroke=0, fill=1)
-text(-sw('Toto said...', 'ENB', 11) / 2, -38, 'Toto said...', 'ENB', 11, INK)
-text(-sw('照他原话画的「我」', 'SCS', 8.5) / 2, -53, '照他原话画的「我」', 'SCS', 8.5, INK)
-text(-sw("— that's me!", HAND, 12) / 2, -74, "— that's me!", HAND, 12, HexColor('#B03000'))
-c.restoreState()
+# ---------- polaroid: video cases use a real frame (photo.jpg); audio-only cases draw the child from their own words ----------
+PHOTO = os.path.join(CASE, 'photo.jpg')
+if os.path.exists(PHOTO):
+    top = hy - 94
+    c.saveState(); c.translate(M + 74, top - 90); c.rotate(-2)
+    rrect(-74, -90, 148, 180, 4, fill=CARD, stroke=LINE)
+    c.saveState()
+    clip = c.beginPath(); clip.rect(-56, -30, 112, 116); c.clipPath(clip, stroke=0, fill=0)
+    c.drawImage(PHOTO, -56, -30, 112, 116)
+    c.restoreState()
+    text(-sw('Toto said...', 'ENB', 11) / 2, -44, 'Toto said...', 'ENB', 11, INK)
+    text(-sw('视频里截的这一帧', 'SCS', 8.5) / 2, -59, '视频里截的这一帧', 'SCS', 8.5, INK)
+    text(-sw("— that's me!", HAND, 12) / 2, -78, "— that's me!", HAND, 12, HexColor('#B03000'))
+    c.restoreState()
+else:
+    # worked-example drawing (Toto's face, from his own words) — redraw per case from the child's text
+    top = hy - 88
+    c.saveState(); c.translate(M + 74, top - 90); c.rotate(-2)
+    rrect(-74, -90, 148, 180, 4, fill=CARD, stroke=LINE)
+    c.setFillColor(HexColor('#EFEDF4')); c.rect(-62, -14, 124, 94, stroke=0, fill=1)
+    fcx, fcy, fr = 0, 26, 35
+    c.setFillColor(PINK); c.setStrokeColor(INK); c.setLineWidth(1.8)
+    c.circle(fcx - fr - 1, fcy + 4, 11.5, stroke=1, fill=1); c.circle(fcx + fr + 1, fcy + 4, 11.5, stroke=1, fill=1)
+    c.setFillColor(YEL); c.circle(fcx, fcy, fr, stroke=1, fill=1)
+    eye_pos = [(fcx - 20, fcy + 12), (fcx + 20, fcy + 12), (fcx, fcy + 23)]
+    for i, (ex, ey) in enumerate(eye_pos):
+        for j, bx in enumerate([ex - 8.5, ex + 2.5]):
+            c.setStrokeColor(INK if (i + j) % 2 == 0 else YELD); c.setLineWidth(2.6); c.setLineCap(1)
+            c.line(bx, ey + 13.5, bx + 6, ey + 11.5)
+    for (ex, ey) in eye_pos:
+        c.setFillColor(CARD); c.setStrokeColor(INK); c.setLineWidth(1.5); c.circle(ex, ey, 8, stroke=1, fill=1)
+        c.setFillColor(BLUE); c.circle(ex, ey, 4.2, stroke=0, fill=1)
+        c.setFillColor(INK); c.circle(ex, ey, 2, stroke=0, fill=1)
+    c.setFillColor(RED); c.setStrokeColor(INK); c.setLineWidth(1.7)
+    c.ellipse(fcx - 18, fcy - 31, fcx + 18, fcy - 12, stroke=1, fill=1)
+    c.setFillColor(CARD); c.roundRect(fcx - 9, fcy - 19, 18, 5.4, 1.6, stroke=0, fill=1)
+    text(-sw('Toto said...', 'ENB', 11) / 2, -38, 'Toto said...', 'ENB', 11, INK)
+    text(-sw('照他原话画的「我」', 'SCS', 8.5) / 2, -53, '照他原话画的「我」', 'SCS', 8.5, INK)
+    text(-sw("— that's me!", HAND, 12) / 2, -74, "— that's me!", HAND, 12, HexColor('#B03000'))
+    c.restoreState()
 # tape
 c.saveState(); c.translate(M + 74, top + 2); c.rotate(-3)
 c.setFillColor(HexColor('#FFE08A')); c.setStrokeColor(HexColor('#F0D488'))
@@ -170,22 +186,22 @@ def draw_wave(x, ybase, wdt, t0, t1, colr):
 bx0 = M + 162; avail = CW - 162
 bubbles = [
     dict(label='打招呼', en='Say hello', colr=BLUEB, dark=HexColor('#1B6FB8'), w=252, dx=0,
-         sentence='Hi! I am Toto.', fsize=11.5, t='00:02', wave=(1.2, 3.0), ww=84,
+         sentence='Hi! I am Toto.', fsize=11.5, t='00:01–00:03', wave=(1.2, 3.0), ww=84,
          listen='点评 · 开口就稳，名字清楚。', tag=None, under=None),
     dict(label='介绍我的脸', en='This is my face', colr=HexColor('#FFD9B3'), dark=HexColor('#B95C08'), w=avail, dx=0,
          sentence='This is my big round yellow face. These are my three big round blue eyes with six big black and yellow eyebrows.',
-         fsize=10.5, t='00:03', wave=(3.1, 17.1), ww=118,
+         fsize=10.5, t='00:03–00:17', wave=(3.1, 17.1), ww=118,
          listen='点评 · 最长一句一口气到底，three 前只停 0.9 秒。', tag=None, under=None),
-    dict(label='耳朵、嘴巴和我', en='Ears, mouth and me', colr=GRNB, dark=HexColor('#2F7D3B'), w=322, dx=0,
+    dict(label='耳朵、嘴巴和我', en='Ears, mouth and me', colr=GRNB, dark=HexColor('#2F7D3B'), w=avail, dx=0,
          sentence='These are my two big pink ears. This is my big oval red mouth. I love the ugly, silly and scary me!',
-         fsize=10.5, t='00:18', wave=(17.6, 36.3), ww=104,
+         fsize=10.5, t='00:18–00:36', wave=(17.6, 36.3), ww=104,
          listen='点评 · 结尾是自己编的。', tag=None, under=['oval', 'mouth']),
 ]
 by = top
 for bb in bubbles:
     bx = bx0 + bb['dx']; bw = bb['w']
     lines = wrap(bb['sentence'], 'ENR', bb['fsize'], bw - 30)
-    bh = 34 + len(lines) * 13
+    bh = 39 + len(lines) * 12.5
     rrect(bx, by - bh, bw, bh, 13, fill=bb['colr'])
     c.setFillColor(bb['colr']); p = c.beginPath()
     p.moveTo(bx + 2, by - bh / 2 - 6); p.lineTo(bx - 9, by - bh / 2); p.lineTo(bx + 2, by - bh / 2 + 7); p.close()
@@ -193,41 +209,50 @@ for bb in bubbles:
     # time stamp, top-right inside
     text(bx + bw - 12 - sw(bb['t'], 'ENB', 8.5), by - 15, bb['t'], 'ENB', 8.5, bb['dark'])
     # sentences
-    ly = by - 25
+    ly = by - 24
+    undone = list(bb['under'] or [])
     for ln in lines:
         text(bx + 15, ly, ln, 'ENR', bb['fsize'], INK)
-        if bb['under']:
-            for uw in bb['under']:
+        if undone:
+            for uw in list(undone):
                 if uw in ln:
+                    undone.remove(uw)
                     ux = bx + 15 + sw(ln[:ln.index(uw)], 'ENR', bb['fsize'])
                     c.setStrokeColor(DASHR); c.setLineWidth(1.5); c.setDash(3, 2)
                     c.line(ux, ly - 3.5, ux + sw(uw, 'ENR', bb['fsize']), ly - 3.5); c.setDash()
-        ly -= 13
+        ly -= 12.5
     # waveform + listening point row
-    draw_wave(bx + 15, by - bh + 8, bb['ww'], bb['wave'][0], bb['wave'][1], bb['dark'])
-    text(bx + 15 + bb['ww'] + 10, by - bh + 10.5, bb['listen'], 'SCS', 8.5, INK)
+    ry = by - 24 - (len(lines) - 1) * 12.5 - 14
+    draw_wave(bx + 15, ry - 5, bb['ww'], bb['wave'][0], bb['wave'][1], bb['dark'])
+    lx = bx + 15 + bb['ww'] + 10
+    text(lx, ry - 3, '点评', 'SCB', 8.5, bb['dark'])
+    text(lx + sw('点评', 'SCB', 8.5) + 4, ry - 3, '· ' + bb['listen'].split('· ', 1)[1], 'SCS', 8.5, bb['dark'])
     # label chip overlapping top edge
     chw = sw(bb['label'], 'SCB', 9) + sw(bb['en'], 'SCS', 8) + 26
-    rrect(bx + 14, by - 5, chw, 17, 8.5, fill=CARD, stroke=bb['dark'], swd=1.1)
-    text(bx + 22, by - 0.2, bb['label'], 'SCB', 9, INK)
-    text(bx + 22 + sw(bb['label'], 'SCB', 9) + 6, by - 0.2, bb['en'], 'SCS', 8, INK)
+    rrect(bx + 14, by - 9.5, chw, 17, 8.5, fill=CARD, stroke=bb['dark'], swd=1.1)
+    text(bx + 22, by - 4.5, bb['label'], 'SCB', 9, INK)
+    text(bx + 22 + sw(bb['label'], 'SCB', 9) + 6, by - 4.5, bb['en'], 'ENL', 8.5, INK)
     if bb['tag']:
         tw = sw(bb['tag'], 'SCS', 8.5) + 16
         c.saveState(); c.translate(bx + bw - tw - 4, by - bh + 4); c.rotate(-2)
         rrect(0, -8, tw, 17, 8.5, fill=CARD, stroke=LINE)
         text(8, -3.5, bb['tag'], 'SCS', 8.5, HexColor('#C73E1D')); c.restoreState()
-    by -= bh + 8
-# tag for bubble 3
-tag3 = 'th、v 还在悄悄练习中'
-tw = sw(tag3, 'SCS', 8.5) + 16
-c.saveState(); c.translate(bx0 + 322 - tw - 6, by + 12); c.rotate(-2)
-rrect(0, -8, tw, 17, 8.5, fill=CARD, stroke=LINE)
-text(8, -3.5, tag3, 'SCS', 8.5, HexColor('#C73E1D')); c.restoreState()
+    by -= bh + 7
+
+# teacher band data — ONLY a real teacher comment provided for this case; set to None to omit the whole section (never invent one)
+TEACHER = dict(hand='Super brave, Toto!', pill='再喊大声点',
+               body='最后一句是 Toto 自己编的——讲到这句，声音悄悄小了下去，像有点不好意思。这份敢编敢说，比分数珍贵——下次请他站起来，把最后一句喊出来。')
 
 # ---------- lower half: two different systems + closing ----------
+def sumline(y, txt):
+    tw9 = sw('总评', 'SCB', 8.5) + 12
+    rrect(M, y - 3.5, tw9, 14.5, 7, fill=CARD, stroke=HexColor('#E4572E'), swd=1.0)
+    text(M + 6, y, '总评', 'SCB', 8.5, HexColor('#E4572E'))
+    text(M + tw9 + 8, y, txt, 'SCB', 9.5, INK)
+
 def sect(y, title, en, note):
     text(M, y, title, 'SCB', 14, INK)
-    text(M + sw(title, 'SCB', 14) + 10, y, en, 'SCS', 8.5, INK)
+    text(M + sw(title, 'SCB', 14) + 10, y, en, 'ENL', 8.5, INK)
     if note:
         text(W - M - sw(note, 'SCS', 8.5), y, note, 'SCS', 8.5, INK)
 
@@ -243,17 +268,29 @@ def flowers(x, cy, n, s=1.0):
                 c.setStrokeColor(HexColor('#D8DEE6')); c.setLineWidth(0.8); c.circle(px, py, 2.6 * s, stroke=1, fill=0)
         c.setFillColor(YEL if filled else HexColor('#E9EDF2')); c.circle(cx, cy, 1.7 * s, stroke=0, fill=1)
 
-def stamp(x_right, ybase, wd, tilt):
+STAMP_GREEN = HexColor('#2E9E4F'); STAMP_AMBER = HexColor('#D9930D'); STAMP_RED = HexColor('#C73E1D')
+def stamp(x_right, ybase, wd, tilt, dots=5):
+    scol = STAMP_GREEN if dots >= 4 else (STAMP_AMBER if dots == 3 else STAMP_RED)
     tw2 = sw(wd, 'SCB', 9.5) + 16
     c.saveState(); c.translate(x_right - tw2, ybase); c.rotate(tilt)
-    rrect(0, 0, tw2, 17, 8.5, fill=CARD, stroke=BLUE, swd=1.1)
-    text(8, 4.5, wd, 'SCB', 9.5, BLUE); c.restoreState()
+    rrect(0, 0, tw2, 17, 8.5, fill=CARD, stroke=scol, swd=1.1)
+    text(8, 4.5, wd, 'SCB', 9.5, scol); c.restoreState()
     return tw2
 
-# ===== A: what he said — word wall + sentence exhibits =====
-ay = by - 16
-sect(ay, '他说了什么', 'What he said', '逐句核对原文 · 参照剑桥 Starters 量规')
-wy = ay - 30
+# ===== A: what he said — dimension strips lead, word wall + exhibits below =====
+ay = by - 6
+sect(ay, '他说了什么', 'What he said', '参照剑桥 Starters 量规')
+sumline(ay - 17, '六句零差错 · 最后一句是自己编的')
+sy = ay - 41
+anchors = ['Starters · 主题词表', 'Starters · 结构清单', 'Starters · can-do 陈述']
+stripw = [('词汇', 4, '用得准'), ('句式与语法', 5, '挺稳当'), ('完整与创意', 5, '有头有尾')]
+for i, (nm, n, wd) in enumerate(stripw):
+    gx = M + i * 174
+    text(gx, sy, nm, 'SCB', 11, INK)
+    stamp(gx + sw(nm, 'SCB', 11) + 48 + sw(wd, 'SCB', 9.5) + 16, sy - 8, wd, -2 if i % 2 == 0 else 2, n)
+    text(gx, sy - 13, anchors[i], 'SCS', 8.5, INK)
+    flowers(gx + 8, sy - 23, n, 0.9)
+wy = ay - 88
 groups = [('身体', ['face', 'eyes', 'eyebrows', 'ears', 'mouth']),
           ('颜色', ['yellow', 'blue', 'black', 'pink', 'red']),
           ('数字', ['3', '6', '2']),
@@ -269,42 +306,35 @@ for gname, words_ in groups:
         cx += chw2 + 5
     wy -= 21.5
 ex = M + 292; ew = CW - 292
-ey = ay - 30
+ey = ay - 86
 text(ex, ey, '单数复数，分得清', 'SCB', 10, INK)
-text(ex, ey - 15, 'this', 'ENB', 10.5, BLUE)
-x2 = ex + sw('this', 'ENB', 10.5)
-text(x2, ey - 15, ' is my face · ', 'ENR', 10.5, INK); x2 += sw(' is my face · ', 'ENR', 10.5)
-text(x2, ey - 15, 'these', 'ENB', 10.5, BLUE); x2 += sw('these', 'ENB', 10.5)
-text(x2, ey - 15, ' are my eyes', 'ENR', 10.5, INK)
-ey -= 31
+x2 = ex
+text(x2, ey - 15, 'this', 'ENB', 10, BLUE); x2 += sw('this', 'ENB', 10)
+text(x2, ey - 15, ' is my face · ', 'ENR', 10, INK); x2 += sw(' is my face · ', 'ENR', 10)
+text(x2, ey - 15, 'these', 'ENB', 10, BLUE); x2 += sw('these', 'ENB', 10)
+text(x2, ey - 15, ' are my eyes', 'ENR', 10, INK)
+ey -= 34
 text(ex, ey, '形容词会排队', 'SCB', 10, INK)
 seg = [('big', '大小'), ('round', '形状'), ('yellow', '颜色')]
 x2 = ex
 for w_, lab in seg:
-    text(x2, ey - 16, w_, 'ENB', 12, INK)
+    text(x2, ey - 16, w_, 'ENB', 10, INK)
     text(x2 + 1, ey - 27, lab, 'SCS', 7.5, HexColor('#43536B'))
-    x2 += sw(w_, 'ENB', 12)
+    x2 += sw(w_, 'ENB', 10)
     if w_ != 'yellow':
-        text(x2 + 2, ey - 16, '·', 'ENB', 12, INK); x2 += sw('·', 'ENB', 12) + 4
-ey -= 41
+        text(x2 + 2, ey - 16, '·', 'ENB', 10, INK); x2 += sw('·', 'ENB', 10) + 4
+ey -= 44
 text(ex, ey, '最后一句，自己编的', 'SCB', 10, INK)
-text(ex, ey - 16, '“ugly, silly and scary”', 'ENB', 11.5, HexColor('#C73E1D'))
-sy = ay - 132
-anchors = ['IELTS 词汇资源 · Starters 词表', 'IELTS 语法 · Starters 结构', 'Starters can-do · 内容连贯']
-for i, (nm, n) in enumerate([('词汇', 4), ('句式与语法', 5), ('完整与创意', 5)]):
-    gx = M + i * 172
-    text(gx, sy, nm, 'SCB', 10, INK)
-    flowers(gx + sw(nm, 'SCB', 10) + 12, sy + 3, n, 0.66)
+text(ex, ey - 15, '“ugly, silly and scary”', 'ENB', 10, HexColor('#C73E1D'))
 
 # ===== B: how he sounded — melody line + three columns =====
-ay2 = sy - 36
-sect(ay2, '他的声音怎么样', 'How he sounded', '全部来自录音实测 · 对标 IELTS 口语标准')
+ay2 = ay - 198 if TEACHER else ay - 206
+sect(ay2, '他的声音怎么样', 'How he sounded', '对标 IELTS 口语标准')
 import json as _j2
 _f0 = _j2.load(open(os.path.join(CASE, 'audio_data.json')))['f0']
-sty = ay2 - 42  # contour baseline
+sty = ay2 - 46 if TEACHER else ay2 - 50  # contour baseline
 sh = 24
-text(M, ay2 - 16, '他声音的旋律线', 'SCB', 9.5, INK)
-text(M + sw('他声音的旋律线', 'SCB', 9.5) + 8, ay2 - 16, '每一句的尾巴都往下落 · 橙点是想词停顿的地方', 'SCS', 8.5, INK)
+sumline(ay2 - 17, '每一句的尾巴都往下落 · 橙点是想词停顿的地方')
 c.setStrokeColor(HexColor('#E1EBF4')); c.setLineWidth(1); c.line(M, sty, W - M, sty)
 def fx(t): return M + t / 37.48 * CW
 def fy(v):
@@ -356,56 +386,57 @@ for t0 in [1.74, 3.12, 6.33, 17.70, 23.46, 30.99]:
     c.line(fx(t0), sty + sh + 2, fx(t0), sty + sh + 5.5)
 for tc, lab in [(8.04, '0.9 秒'), (20.64, '1.2 秒'), (25.8, '2.8 秒')]:
     c.setFillColor(HexColor('#E4572E')); c.circle(fx(tc), sty, 2.3, stroke=0, fill=1)
-    text(fx(tc) - sw(lab, 'SCS', 7.5) / 2, sty - 11, lab, 'SCS', 7.5, HexColor('#C73E1D'))
+    text(fx(tc) - sw(lab, 'SCS', 8.5) / 2, sty - 11, lab, 'SCS', 8.5, HexColor('#C73E1D'))
 cols = [
     ('发音准确度', 'IELTS · Pronunciation', 4, '很清楚',
      '清晰度实测 17.9 dB，\n小关卡：词尾 th、v 音——\nmouth 成了 mouse，oval 没听出。'),
-    ('流利度', 'IELTS · Fluency & Coherence', 4, '很顺溜',
+    ('流利度', 'IELTS · Fluency and Coherence', 4, '很顺溜',
      '没有「呃、啊」，也不重说。\n想词的停顿都躲在句中，\n句间很干脆。'),
-    ('语调与重音', 'IELTS · Pronunciation（韵律）', 4, '有起伏',
+    ('语调与重音', 'IELTS · Pronunciation', 4, '有起伏',
      '句尾 6/6 全降调，\n跨度 12.9 个半音超一个八度。\n遗憾：重音还没站出来。'),
 ]
-cy0 = sty - 33
+cy0 = sty - 31 if TEACHER else sty - 34
 for i, (nm, en, dots, wd, desc) in enumerate(cols):
     gx = M + i * 174
     text(gx, cy0, nm, 'SCB', 11, INK)
-    stamp(gx + 163, cy0 - 8, wd, -2 if i % 2 == 0 else 2)
-    text(gx, cy0 - 13, en, 'SCS', 8.5, INK)
+    stamp(gx + sw(nm, 'SCB', 11) + 48 + sw(wd, 'SCB', 9.5) + 16, cy0 - 8, wd, -2 if i % 2 == 0 else 2, dots)
+    text(gx, cy0 - 13, en, 'ENL', 8.5, INK)
     flowers(gx + 8, cy0 - 26, dots, 0.9)
-    para(gx, cy0 - 44, desc, 'SCS', 9.2, INK, maxw=163, leading=12)
+    para(gx, cy0 - 44, desc, 'SCS', 9.5, INK, maxw=163, leading=13)
 
-# ===== closing: teacher band + games in three columns =====
-ty = cy0 - 86
-text(M, ty, '老师的话', 'SCB', 14, INK)
-text(M + sw('老师的话', 'SCB', 14) + 8, ty, 'From the teacher', 'SCS', 8.5, INK)
-hb = ty - 33
-c.saveState(); c.translate(M, hb); c.rotate(-1.5)
-text(0, 0, 'Super brave, Toto!', HAND, 19, INK)
-c.setStrokeColor(HexColor('#E4572E')); c.setLineWidth(2.4); c.setLineCap(1)
-c.line(2, -5, sw('Super brave, Toto!', HAND, 19) - 2, -4); c.restoreState()
-pw = sw('再喊大声点', 'SCB', 8.5) + 12
-rrect(M + 168, hb - 7, pw, 15, 7.5, fill=HexColor('#E4572E'))
-text(M + 174, hb - 2.5, '再喊大声点', 'SCB', 8.5, CARD)
-para(M + 246, hb + 3, '最后一句是 Toto 自己编的——讲到这句，声音悄悄小了下去，像有点不好意思。这份敢编敢说，比分数珍贵——下次请他站起来，把最后一句喊出来。',
-     'SCS', 9.5, INK, maxw=CW - 246, leading=12.5)
-gy = hb - 36
+# ===== closing: teacher band + games =====
+if TEACHER:
+    ty = cy0 - 86
+    text(M, ty, '老师的话', 'SCB', 14, INK)
+    text(M + sw('老师的话', 'SCB', 14) + 8, ty, 'From the teacher', 'ENL', 8.5, INK)
+    hb = ty - 33
+    c.saveState(); c.translate(M, hb); c.rotate(-1.5)
+    text(0, 0, TEACHER['hand'], HAND, 19, INK)
+    c.setStrokeColor(HexColor('#E4572E')); c.setLineWidth(2.4); c.setLineCap(1)
+    c.line(2, -5, sw(TEACHER['hand'], HAND, 19) - 2, -4); c.restoreState()
+    pw = sw(TEACHER['pill'], 'SCB', 8.5) + 12
+    rrect(M + 168, hb - 7, pw, 15, 7.5, fill=HexColor('#E4572E'))
+    text(M + 174, hb - 2.5, TEACHER['pill'], 'SCB', 8.5, CARD)
+    para(M + 246, hb + 3, TEACHER['body'], 'SCS', 9.5, INK, maxw=CW - 246, leading=12.5)
+    gy = ty - 58
+else:
+    gy = cy0 - 92
+c.restoreState()
 text(M, gy, '回家一起玩', 'SCB', 14, INK)
-text(M + sw('回家一起玩', 'SCB', 14) + 8, gy, 'Play at home', 'SCS', 8.5, INK)
+text(M + sw('回家一起玩', 'SCB', 14) + 8, gy, 'Play at home', 'ENL', 8.5, INK)
 text(W - M - sw('玩过一项，就在方框里打个勾吧。', 'SCS', 8.5), gy, '玩过一项，就在方框里打个勾吧。', 'SCS', 8.5, INK)
 games = [
     ('小舌头探险', '对着镜子露一点舌尖说 mouth、teeth、three——专练词尾 th。'),
-    ('蜜蜂 v 嗡嗡', '上牙轻咬下唇：oval、love、five。摸摸喉咙，有震动，v 就出来了。'),
+    ('蜜蜂 v 嗡嗡', '上牙轻咬下唇说 oval、love、five，摸喉咙，有震动 v 就出来了。'),
     ('重音拍手 + 结尾喊话', 'YEL-low、SIL-ly 第一下重拍、第二下轻带；站起来喊出结尾句。'),
 ]
 gyy = gy - 22
 for i, (nm, desc) in enumerate(games):
     gx = M + i * 174
     rrect(gx, gyy - 1, 13, 13, 3.5, stroke=INK, swd=1.2)
-    text(gx + 20, gyy + 1, nm, 'SCB', 10.5, INK)
-    para(gx + 20, gyy - 12, desc, 'SCS', 9.0, INK, maxw=143, leading=11.5)
+    text(gx + 20, gyy + 1, nm, 'SCB', 10, INK)
+    para(gx + 20, gyy - 12, desc, 'SCS', 9.5, INK, maxw=143, leading=13)
 
-# ---------- footer ----------
-text(W - M - sw('TOTO · 2026', 'ENB', 8), 22, 'TOTO · 2026', 'ENB', 8, INK)
 
 c.showPage(); c.save()
 print('saved', OUT, 'display font:', DISP)
