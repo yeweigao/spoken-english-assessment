@@ -330,18 +330,27 @@ text(ex, ey - 15, '“ugly, silly and scary”', 'ENB', 10, HexColor('#C73E1D'))
 # ===== B: how he sounded — melody line + three columns =====
 ay2 = ay - 198 if TEACHER else ay - 206
 sect(ay2, '他的声音怎么样', 'How he sounded', '对标 IELTS 口语标准')
+sumline(ay2 - 17, '每句说完都稳稳落地 · 想词才停，句间很干脆')
+# ===== his voice, measured two ways on one timeline: loudness (bars) + pitch (line); orange bands = pauses =====
 import json as _j2
 _f0 = _j2.load(open(os.path.join(CASE, 'audio_data.json')))['f0']
-sty = ay2 - 46 if TEACHER else ay2 - 50  # contour baseline
-sh = 24
-sumline(ay2 - 17, '每一句的尾巴都往下落 · 橙点是想词停顿的地方')
-c.setStrokeColor(HexColor('#E1EBF4')); c.setLineWidth(1); c.line(M, sty, W - M, sty)
 def fx(t): return M + t / 37.48 * CW
+for pc, dur in [(8.04, 0.9), (20.64, 1.2), (25.8, 2.8)]:
+    c.setFillColor(HexColor('#FDEEE3'))
+    c.rect(fx(pc - dur / 2), ay2 - 71, (fx(pc + dur / 2) - fx(pc - dur / 2)), 38, stroke=0, fill=1)
+text(M, ay2 - 31, '声音大小', 'SCS', 8.5, HexColor('#43536B'))
+wyA = ay2 - 47
+c.setStrokeColor(BLUE); c.setLineWidth(2.0); c.setLineCap(1)
+_nn = len(_peaks)
+for i, v in enumerate(_peaks):
+    xx = M + i / _nn * CW
+    c.line(xx, wyA, xx, wyA + 1.5 + v * 12.5)
+text(M, ay2 - 55, '声音高低', 'SCS', 8.5, HexColor('#43536B'))
+fy0 = ay2 - 71
 def fy(v):
     import math as _m
-    return sty + (_m.log2(min(v, 420)) - _m.log2(150)) / (_m.log2(420) - _m.log2(150)) * sh
+    return fy0 + (_m.log2(min(v, 420)) - _m.log2(150)) / (_m.log2(420) - _m.log2(150)) * 14
 _raw = [v if (v and v > 0) else 0 for v in _f0]
-# bridge unvoiced gaps of <= 0.2 s between voiced runs
 i = 0
 while i < len(_raw):
     if _raw[i] == 0:
@@ -353,7 +362,6 @@ while i < len(_raw):
         i = j
     else:
         i += 1
-# median (5) + moving average (3) within voiced runs
 _fs = []
 _run = []
 def _flush():
@@ -371,7 +379,7 @@ for v in _raw:
     else:
         _flush(); _fs.append(0)
 _flush()
-c.setStrokeColor(BLUE); c.setLineWidth(1.5); c.setLineCap(1)
+c.setStrokeColor(BLUE); c.setLineWidth(1.4); c.setLineCap(1)
 p = c.beginPath(); pen = False
 for i, v in enumerate(_fs):
     if v and v > 0:
@@ -381,12 +389,8 @@ for i, v in enumerate(_fs):
     else:
         pen = False
 c.drawPath(p, stroke=1, fill=0)
-for t0 in [1.74, 3.12, 6.33, 17.70, 23.46, 30.99]:
-    c.setStrokeColor(HexColor('#B9C9D8')); c.setLineWidth(0.9)
-    c.line(fx(t0), sty + sh + 2, fx(t0), sty + sh + 5.5)
-for tc, lab in [(8.04, '0.9 秒'), (20.64, '1.2 秒'), (25.8, '2.8 秒')]:
-    c.setFillColor(HexColor('#E4572E')); c.circle(fx(tc), sty, 2.3, stroke=0, fill=1)
-    text(fx(tc) - sw(lab, 'SCS', 8.5) / 2, sty - 11, lab, 'SCS', 8.5, HexColor('#C73E1D'))
+for pc, lab in [(8.04, '0.9 秒'), (20.64, '1.2 秒'), (25.8, '2.8 秒')]:
+    text(fx(pc) - sw(lab, 'SCS', 8.5) / 2, ay2 - 82, lab, 'SCS', 8.5, HexColor('#C73E1D'))
 cols = [
     ('发音准确度', 'IELTS · Pronunciation', 4, '很清楚',
      '清晰度实测 17.9 dB，\n小关卡：词尾 th、v 音——\nmouth 成了 mouse，oval 没听出。'),
@@ -395,18 +399,18 @@ cols = [
     ('语调与重音', 'IELTS · Pronunciation', 4, '有起伏',
      '句尾 6/6 全降调，\n跨度 12.9 个半音超一个八度。\n遗憾：重音还没站出来。'),
 ]
-cy0 = sty - 31 if TEACHER else sty - 34
+cy0 = ay2 - 94
 for i, (nm, en, dots, wd, desc) in enumerate(cols):
     gx = M + i * 174
     text(gx, cy0, nm, 'SCB', 11, INK)
     stamp(gx + sw(nm, 'SCB', 11) + 48 + sw(wd, 'SCB', 9.5) + 16, cy0 - 8, wd, -2 if i % 2 == 0 else 2, dots)
     text(gx, cy0 - 13, en, 'ENL', 8.5, INK)
     flowers(gx + 8, cy0 - 26, dots, 0.9)
-    para(gx, cy0 - 44, desc, 'SCS', 9.5, INK, maxw=163, leading=13)
+    para(gx, cy0 - 41 if TEACHER else cy0 - 44, desc, 'SCS', 9.5, INK, maxw=163, leading=13)
 
 # ===== closing: teacher band + games =====
 if TEACHER:
-    ty = cy0 - 86
+    ty = cy0 - 80 if TEACHER else cy0 - 86
     text(M, ty, '老师的话', 'SCB', 14, INK)
     text(M + sw('老师的话', 'SCB', 14) + 8, ty, 'From the teacher', 'ENL', 8.5, INK)
     hb = ty - 33
@@ -418,7 +422,7 @@ if TEACHER:
     rrect(M + 168, hb - 7, pw, 15, 7.5, fill=HexColor('#E4572E'))
     text(M + 174, hb - 2.5, TEACHER['pill'], 'SCB', 8.5, CARD)
     para(M + 246, hb + 3, TEACHER['body'], 'SCS', 9.5, INK, maxw=CW - 246, leading=12.5)
-    gy = ty - 58
+    gy = ty - 50 if TEACHER else ty - 58
 else:
     gy = cy0 - 92
 c.restoreState()
