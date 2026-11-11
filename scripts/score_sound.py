@@ -16,11 +16,19 @@ What is measured (thresholds in references/rubric.md — keep both in step):
                      as "meal"; the original can. Either way a content word the systems split on
                      (2 of 3) is listed and blocks 5 flowers; whisper words with p < 0.5 are listed, and a
               content word below 0.4 (not the child's name, not a spelled letter) also blocks 5 flowers.
+              Agreement is computed only over stretches a majority of recognisers actually cover:
+              a recogniser silent for >= 1 s where others hear speech is flagged under "coverage",
+              and when the evidence base drops to two systems that is stated, not hidden.
   流利度      articulation rate (words per minute of actual speaking time — page turns and breaths
-              between sentences don't count against it), pauses >= 1 s inside a sentence, repeats,
-              and fillers. Recognisers silently drop "um/嗯", so fillers are also found acoustically:
-              a voiced stretch of 0.2–1.5 s that no recogniser turned into a word.
+              between sentences don't count against it), long pauses (>= 1 s, counted wherever they
+              fall: recogniser punctuation cannot locate a child's sentence boundaries reliably, so
+              the inside/between-sentence split is still reported but no longer gates the band),
+              repeats, and fillers. Recognisers silently drop "um/嗯", so fillers are also found
+              acoustically: a voiced stretch of 0.2–1.5 s that no recogniser turned into a word.
   语调与重音  pitch span (5th–95th percentile, semitones) and the share of statements ending falling.
+              The top band also requires at least one measured ending that rises or levels: identical
+              falling contours prove one tune, not control of melody. With few endings, the 4-flower
+              falling share may be missed by a single ending (calibrated 2026-11-11, see rubric).
 Not calibrated against human examiners: a formative banding, never an exam score (references/claims.md)."""
 import difflib, glob, json, math, os, re, sys
 import numpy as np
@@ -160,6 +168,7 @@ artic = n_words / max(speech_time, 1e-6) * 60
 inside = [p for p in pauses if p['inside_sentence']]
 between = [p['seconds'] for p in pauses if not p['inside_sentence']]
 inside_per_min = len(inside) / span * 60
+long_per_min = len(pauses) / span * 60          # all >= 1 s pauses; the banding gate (see rubric)
 
 def repeats(toks):
     out = []
@@ -222,6 +231,39 @@ measured = [e for e in ends if e['move'] is not None]
 falls = sum(e['shape'] == 'fall' for e in measured)
 fall_share = falls / len(measured) if measured else 0.0
 
+# ---------- 覆盖检查：任一识别器在别人听到语音的地段整段沉默，必须标记 ----------
+# 有声段 (merged) 是"这里有语音"的地面真值；识别器在一段里写出至少一个词即算"醒着"。
+# 一致率只在 >= need 套识别器都醒着的地段上算；参考转写本身漏掉的地段也要量出来。
+COVER_MIN_RUN = 0.5      # 短于 0.5 秒的有声段不参与覆盖判定（词界间隙不算沉默）
+COVER_MIN_SILENT = 1.0   # 沉默 >= 1 秒才标记（Parakeet 案是约 17 秒）
+def _awake(n, a, b):
+    return any(x['s'] - 0.25 < b and x['e'] + 0.25 > a for x in recs[n])
+cover_runs = [r for r in merged if r[1] - r[0] >= COVER_MIN_RUN]
+silent_stretches = []
+for n in names:
+    for a, b in cover_runs:
+        others = [m for m in names if m != n and _awake(m, a, b)]
+        if not _awake(n, a, b) and others and b - a >= COVER_MIN_SILENT:
+            silent_stretches.append({'recogniser': n, 'start': round(float(a), 2),
+                                     'end': round(float(b), 2), 'seconds': round(float(b - a), 1),
+                                     'heard_by': sorted(others)})
+def _run_of(t):
+    for a, b in cover_runs:
+        if a - 0.25 <= t <= b + 0.25:
+            return (a, b)
+    return None
+covered_scored = []
+for i in scored:
+    r = _run_of(ref[i]['s'])
+    if r is None or sum(1 for n in names if _awake(n, *r)) >= need:
+        covered_scored.append(i)
+intel_all = intel
+intel = (sum(votes[i] >= need for i in covered_scored) / len(covered_scored)) if covered_scored else intel_all
+voiced_seconds = sum(b - a for a, b in cover_runs)
+ref_covered_seconds = sum(b - a for a, b in cover_runs
+                          if any(x['s'] - 0.25 < b and x['e'] + 0.25 > a for x in ref))
+ref_coverage = ref_covered_seconds / voiced_seconds if voiced_seconds else 1.0
+
 # ---------- fixed banding rules (mirror references/rubric.md) ----------
 def band(rules):
     for flowers, cond in rules:
@@ -230,13 +272,15 @@ def band(rules):
 acc = accuracy if task == 'read' else intel
 unsure = [m for m in soft if m['p'] < 0.4]                  # a content word the recogniser itself doubts
 pron = band([(5, acc >= 0.98 and not split and not unsure), (4, acc >= 0.93), (3, acc >= 0.85), (2, acc >= 0.70)])
-flu = band([(5, artic >= 150 and inside_per_min <= 1 and disfl_per_min <= 0.5),
-            (4, artic >= 120 and inside_per_min <= 3 and disfl_per_min <= 1.5),
-            (3, artic >= 90 and inside_per_min <= 6 and disfl_per_min <= 4),
+flu = band([(5, artic >= 150 and long_per_min <= 6 and disfl_per_min <= 0.5),
+            (4, artic >= 120 and long_per_min <= 11 and disfl_per_min <= 1.5),
+            (3, artic >= 90 and long_per_min <= 16 and disfl_per_min <= 4),
             (2, artic >= 60)])
 enough = len(measured) >= 3
-pros = band([(5, enough and span_st >= 9 and fall_share >= 0.85),
-             (4, enough and span_st >= 6 and fall_share >= 0.65),
+varied = any(e['shape'] in ('rise', 'level') for e in measured)   # one tune repeated is not melody control
+near4 = falls >= len(measured) - 3 and fall_share >= 0.55          # few endings: one ending is worth ~12 points
+pros = band([(5, enough and span_st >= 9 and fall_share >= 0.85 and varied),
+             (4, enough and span_st >= 6 and (fall_share >= 0.65 or near4)),
              (3, span_st >= 4 and (fall_share >= 0.40 or not enough)),
              (2, span_st >= 2)])
 
@@ -249,12 +293,19 @@ result = {
     'fluency': {'flowers': flu, 'words': n_words, 'speaking_span_seconds': round(float(span), 1),
                 'speech_seconds': round(float(speech_time), 1), 'articulation_wpm': round(artic),
                 'overall_wpm': round(rate), 'pauses_1s_plus': pauses,
-                'inside_sentence_pauses': len(inside), 'inside_sentence_pauses_per_minute': round(inside_per_min, 1),
+                'inside_sentence_pauses': len(inside), 'inside_sentence_pauses_per_minute': round(inside_per_min, 1), 'long_pauses_per_minute': round(long_per_min, 1),
                 'between_sentence_pause_median': round(float(np.median(between)), 1) if between else None,
                 'repeats': [{'at': round(r['at'], 1), 'heard_by': sorted(r['by'])} for r in rep_times],
                 'fillers': fillers, 'fillers_unwritten': orphans},
     'prosody': {'flowers': pros, 'median_hz': round(med, 1), 'span_semitones': round(span_st, 1),
                 'statement_endings': ends, 'falling': falls, 'measured': len(measured)},
+    'coverage': {'voiced_seconds': round(float(voiced_seconds), 1),
+                 'reference_coverage': round(ref_coverage, 3),
+                 'silent_stretches': silent_stretches,
+                 'intelligibility_all_tokens': round(intel_all, 3),
+                 'intelligibility_covered_tokens': round(intel, 3),
+                 'covered_tokens': len(covered_scored),
+                 'scored_tokens': len(scored)},
     'note_low_probability': '低把握词：Whisper 对该词的把握 < 0.5；< 0.4 的内容词会挡住 5 朵',
     'note': '固定规则分档，未经真人评分校准；结果为形成性分档，不与任何考试成绩等效。',
 }
@@ -265,7 +316,13 @@ if task == 'read':
 else:
     print(f'发音准确度 {pron} 朵 — 多数听得一致 {intel:.0%}；没听一致：{[m["token"] for m in not_alike]}')
 print(f'           有分歧：{[(m["token"], m["votes"]) for m in split]}；低把握词：{[(m["token"], m["p"]) for m in soft]}')
-print(f'流利度     {flu} 朵 — 说话时语速 {round(artic)} 词/分（整段 {round(rate)}）；句中停顿 {len(inside)} 次；'
+print(f'流利度     {flu} 朵 — 说话时语速 {round(artic)} 词/分（整段 {round(rate)}）；长停顿 {len(pauses)} 次（{long_per_min:.1f} 次/分，其中句中 {len(inside)} 次）；'
       f'句间停顿中位 {result["fluency"]["between_sentence_pause_median"]} 秒；重说 {len(rep_times)}；填充 {fillers}（其中未被转写 {len(orphans)}）')
 print(f'语调与重音 {pros} 朵 — 音高跨度 {span_st:.1f} 半音；陈述句尾 {falls}/{len(measured)} 下降')
 print('saved', OUT)
+if silent_stretches:
+    print('覆盖告警：' + '；'.join(
+        f"{s['recogniser']} 在 {s['start']}–{s['end']} 秒沉默 {s['seconds']} 秒（{','.join(s['heard_by'])} 听到了）"
+        for s in silent_stretches))
+if ref_coverage < 0.9:
+    print(f'覆盖告警：参考转写只覆盖了 {ref_coverage:.0%} 的有声时长，一致率分母不完整')

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Download the three speech-recognition models into ../assets/models/ (NOT bundled in the repo).
 
-All three run fully offline afterwards, on CPU, no API key; the recording never leaves the machine.
+All three run fully offline afterwards, on CPU, no API key.
   whisper-small.en/    Systran/faster-whisper-small.en   (~460 MB, MIT)
   whisper-medium.en/   Systran/faster-whisper-medium.en  (~1.5 GB, MIT)
   parakeet-tdt-0.6b-v2-int8/   NVIDIA Parakeet TDT 0.6b v2, sherpa-onnx int8 build (~630 MB, CC-BY-4.0)
