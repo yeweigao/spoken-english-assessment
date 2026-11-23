@@ -8,3 +8,4 @@ __pycache__/
 assets/models/
 assets/*.log
 .venv/
+cases/

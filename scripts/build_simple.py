@@ -3,16 +3,22 @@
 to the two-page detailed report; same measurements, same flower counts).
 
 Order follows the normal assessment-report genre: identity -> six-dimension
-radar with a plain-language overview -> per-dimension readings -> next steps
-(goal + home games) -> appendix: the full transcript. Design law (full spec
-in references/type-system.md, section 简版一页):
-- ONE pale-cream field over the whole top, ending in a drawn wave with two
-  clouds on the seam; ONE strong yellow (frame + the ray sun, #FFD65A, built
-  as a flat disc with twelve pill rays, centre off the top-right corner);
-  the child's photo print sits on the sun (cover-fit: crop, never stretch).
-- Radar data in marigold orange; red is reserved for earned flowers, which
-  appear ONLY in the per-dimension readings. No overall grade line and no
-  invented framework tiers: quality lives in the flowers and the readings.
+radar with a plain-language overview -> per-dimension readings -> the
+teacher's note (only when a real one was supplied) -> next steps (goal + home
+games) -> appendix: the full transcript. Design law (full spec in
+references/type-system.md, section 简版一页):
+- ONE pale field over the whole top, ending in a drawn wave with two clouds on
+  the seam; ONE strong tone (frame + the ray sun, built as a flat disc with
+  twelve pill rays, centre off the top-right corner); the child's photo print
+  sits on the sun (cover-fit: crop, never stretch). The palette comes from
+  case.json `theme` — six macaron sets in THEMES; red flowers and the practice
+  underlines keep their meaning and do not change with the theme.
+- Radar data in the theme's deep tone; red is reserved for earned flowers and
+  the practice-word underline, which appear ONLY where they carry that meaning.
+  No overall grade line and no invented framework tiers.
+- The teacher's note is a human voice after the evidence: it sits between the
+  readings and 接下来怎么做, appears only when case.json supplies a real
+  comment, and vanishes whole when it doesn't.
 - Say each thing once: the radar carries dimension names only (the verdict
   word lives in the readings), the overview speaks in conclusions without
   measurements, the readings carry the evidence. validate() enforces this.
@@ -48,6 +54,38 @@ DISP = reg('ZCOOL', 'ZCOOLKuaiLe.ttf', 'SCB')
 INK = HexColor('#141414'); RED = HexColor('#E4572E')
 GREY = HexColor('#6B7280'); FAINT = HexColor('#C9D2DD')
 CARD = HexColor('#FFFFFF'); YEL = HexColor('#FFC93C')
+
+# ===== macaron themes, chosen per case in case.json "theme" (default cream) =====
+# Each set: field = the pale wash over the top, sun/frame = the strong tone,
+# radar = a readable deep tone of the same family, plus the paper tints of
+# the goal chip and the transcript box. Red stays fixed: it carries meaning
+# (earned flowers, practice-word underline) and never becomes a theme colour.
+THEMES = {
+    'cream': dict(label='奶油黄', field='#FFF9EA', sun='#FFD65A', frame='#FFC93C',
+                  tape='#FFE9A8', chip_shadow='#E7ECF1', chip_line='#EFE9DC',
+                  box_shadow='#E4E9EF', box_fill='#FFFDF5', box_line='#F0EAD8',
+                  radar_fill='#F09A2E', radar_line='#ED8F24', quote='#DFA32A'),
+    'mint': dict(label='薄荷绿', field='#E7F7EE', sun='#7FD2AB', frame='#5FB78D',
+                 tape='#CDEDDF', chip_shadow='#E2EFE9', chip_line='#D7EADF',
+                 box_shadow='#E1EFE8', box_fill='#FBFFFC', box_line='#DAEDE4',
+                 radar_fill='#3E9E7A', radar_line='#2F8767', quote='#4E9A7D'),
+    'sakura': dict(label='樱花粉', field='#FFEEF2', sun='#FFA4BC', frame='#EE8FA8',
+                   tape='#FFD9E2', chip_shadow='#F5E6EA', chip_line='#F4DEE4',
+                   box_shadow='#F5E6EA', box_fill='#FFFCFD', box_line='#F6E2E8',
+                   radar_fill='#D4698A', radar_line='#C15578', quote='#D0738F'),
+    'sky': dict(label='云朵蓝', field='#EAF5FD', sun='#93CBEA', frame='#6FB6DE',
+                tape='#CFE9F7', chip_shadow='#E5EFF5', chip_line='#DAE9F2',
+                box_shadow='#E4EEF4', box_fill='#FCFFFF', box_line='#DCECF4',
+                radar_fill='#3D8FC0', radar_line='#2F7BA9', quote='#4C90B8'),
+    'lilac': dict(label='薰衣草', field='#F1ECFA', sun='#C3A9E6', frame='#A88CD8',
+                  tape='#E3D8F6', chip_shadow='#EAE6F1', chip_line='#E3DCF0',
+                  box_shadow='#EAE6F1', box_fill='#FEFDFF', box_line='#E6DFF1',
+                  radar_fill='#7A5BB5', radar_line='#684CA1', quote='#7E63B0'),
+    'peach': dict(label='蜜桃橙', field='#FFF0E6', sun='#FFB68F', frame='#F79B6C',
+                  tape='#FFDCC8', chip_shadow='#F5E8E0', chip_line='#F6E0D4',
+                  box_shadow='#F5E8E0', box_fill='#FFFCFA', box_line='#F7E3D9',
+                  radar_fill='#DD7742', radar_line='#C9652F', quote='#D2743C'),
+}
 
 def sw(t, f, s): return pdfmetrics.stringWidth(t, f, s)
 CLOSE = '，。、；：！？）」』”’》〕…'
@@ -132,8 +170,9 @@ def wrap(s, font, size, maxw):
 
 # ===== CASE DATA lives in the case directory, never in this script:
 #   python3 build_simple.py [case.json]      (default: ./case.json; photo, audio_data.json beside it)
-# Fields: name, pro (她/他), topic, date, task ("speak" | "read"), photo, overview[2–4], mark[],
-# dims[6 × [name, verdict word, flowers, reading]], goal, games[3 × [name, how]], script.
+# Fields: name, pro (她/他), topic, date, task ("speak" | "read"), photo, theme (six macaron
+# keys), overview[2–4], mark[], dims[6 × [name, verdict word, flowers, reading]], goal,
+# games[3 × [name, how]], script, teacher{comment, sign} (optional, real source only).
 # The recording length on the page comes from audio_data.json (50 ms windows), so it can't drift.
 import sys
 CASE_FILE = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else 'case.json')
@@ -150,6 +189,7 @@ def load_case(path):
     d['dims'] = [tuple(x) for x in d['dims']]; d['games'] = [tuple(x) for x in d['games']]
     d['img'] = d.get('photo') or d.get('img')
     d.setdefault('out', 'report-simple.pdf'); d.setdefault('task', 'speak')
+    d.setdefault('theme', 'cream')
     ad = os.path.join(CASE, 'audio_data.json')
     if os.path.isfile(ad):
         d['secs'] = fmt_secs(len(json.load(open(ad))['peaks']) * 0.05)
@@ -184,6 +224,14 @@ def validate(d):
     """Fail with a message the writer can act on, before anything is drawn."""
     if d.get('task', 'speak') not in ('speak', 'read'):
         raise ValueError('task 只能是 speak（自由表达）或 read（朗读现成文本）')
+    if d.get('theme') not in THEMES:
+        raise ValueError('theme 只能是 ' + ' / '.join(f'{k}（{v["label"]}）' for k, v in THEMES.items()))
+    tch = d.get('teacher')
+    if tch:
+        if not str(tch.get('comment') or '').strip():
+            raise ValueError('teacher 要么整段不写，要么写 comment（老师评语原文）；没有真实评语就删掉 teacher')
+        if len(wrap(str(tch['comment']), 'SCS', 10, CW - 40)) > 3:
+            raise ValueError('老师评语不超过三行，请精简')
     if d.get('task') == 'read' and not d.get('original'):
         raise ValueError('朗读案例必须写 original（课文原文）：读错的词只有对着原文才查得出')
     ov = d['overview']
@@ -229,14 +277,15 @@ def top_layout(d):
     yy = oy0 - 21
     for ln in d['overview']:
         yy -= 14 * len(wrap(ln, 'SCS', 10, OVER_W)) + 4
-    iy = min(cy0 - 150, yy - 40)                   # 逐项解读 heading
-    return dict(hy=hy, cy0=cy0, oy0=oy0, iy=iy, field_bottom=iy + 34)
+    iy = min(cy0 - 128, yy - 40)                   # 逐项解读 heading
+    return dict(hy=hy, cy0=cy0, oy0=oy0, iy=iy, field_bottom=iy + 30)
 
 SUN_R, SUN_C = 138, (W - 30, H - 16)
 
 def render(d):
     validate(d)
     L = top_layout(d)
+    T = THEMES[d['theme']]
     c = canvas.Canvas(os.path.join(CASE, d['out']), pagesize=A4)
     def text(x, y, s, f='SCS', size=10, color=INK):
         c.setFont(f, size); c.setFillColor(color); c.drawString(x, y, s)
@@ -247,9 +296,9 @@ def render(d):
         for ln in wrap(s, f, size, maxw):
             text(x, yy, ln, f, size, color); yy -= leading
         return yy
-    def tape(cx, cy, w=34, h=10, ang=-4, col='#FFE9A8'):
+    def tape(cx, cy, w=34, h=10, ang=-4, col=None):
         c.saveState(); c.translate(cx, cy); c.rotate(ang)
-        c.setFillColor(HexColor(col)); c.setFillAlpha(0.78)
+        c.setFillColor(HexColor(col or T['tape'])); c.setFillAlpha(0.78)
         c.rect(-w / 2, -h / 2, w, h, stroke=0, fill=1); c.setFillAlpha(1); c.restoreState()
     from reportlab.lib.utils import ImageReader
     def cover_image(path, x, y, w, h, fx=0.5, fy=0.5):
@@ -328,10 +377,10 @@ def render(d):
     # with two clouds sitting on the seam — the divider is drawn, not ruled =====
     _by = L['field_bottom']
     _fp = c.beginPath(); _fp.moveTo(E, _by + 4)
-    for _x0, _y0, _x1, _y1 in [(E, 4, 104, -6), (104, -6, 196, 7), (196, 7, 288, -6), (288, -6, 380, 7), (380, 7, 472, -6), (472, -6, W - E, 3)]:
+    for _x0, _y0, _x1, _y1 in [(E, 3, 104, -5), (104, -5, 196, 5), (196, 5, 288, -5), (288, -5, 380, 5), (380, 5, 472, -5), (472, -5, W - E, 2)]:
         _fp.curveTo(_x0 + (_x1 - _x0) * 0.5, _by + _y0, _x1 - (_x1 - _x0) * 0.5, _by + _y1, _x1, _by + _y1)
     _fp.lineTo(W - E, H - E); _fp.lineTo(E, H - E); _fp.close()
-    c.setFillColor(HexColor('#FFF9EA')); c.drawPath(_fp, stroke=0, fill=1)
+    c.setFillColor(HexColor(T['field'])); c.drawPath(_fp, stroke=0, fill=1)
     cloud(196, _by + 1, 0.85); cloud(472, _by - 2, 0.7)
     # the corner sun on top of the field
     # a real sun, built the way the reference builds it: one flat disc
@@ -340,7 +389,7 @@ def render(d):
     # where it reads as part of the sun — never across text, never cut by the frame, never peeking
     # out from behind the photo as a stray bar.
     _sx, _sy = SUN_C
-    c.setFillColor(HexColor('#FFD65A'))
+    c.setFillColor(HexColor(T['sun']))
     _keep_out = [(OVER_X - 8, L['oy0'] - 400, W, L['oy0'] + 16),                 # overview column
                  (M - 4, H - 80, M + 12 + max(sw('英语口语测评报告', DISP, 25),                  # title + meta line
                                               sw(f"姓名 {d['name']} · 课题 {d['topic']} · 录音 {d['secs']} · {d['date']}", 'SCS', 10.5)), H),
@@ -397,7 +446,7 @@ def render(d):
 
     # the yellow board frame — everything is pinned inside it. Its outer edge sits 14pt (5 mm)
     # in from the paper edge, inside what an office or home printer can actually print.
-    c.setStrokeColor(HexColor('#FFC93C')); c.setLineWidth(8); c.rect(E - 4, E - 4, W - 2 * E + 8, H - 2 * E + 8, stroke=1, fill=0)
+    c.setStrokeColor(HexColor(T['frame'])); c.setLineWidth(8); c.rect(E - 4, E - 4, W - 2 * E + 8, H - 2 * E + 8, stroke=1, fill=0)
 
     for _fx, _fy in _tiny_flowers:
         flower1(_fx, _fy, 0.52, True)
@@ -419,7 +468,7 @@ def render(d):
     # ---------- 2. the hexagon, first ----------
     hy = L['hy']
     head(hy, '六个维度')
-    R = 72; cx0, cy0 = M + 118, L['cy0']
+    R = 66; cx0, cy0 = M + 118, L['cy0']
     order = [0, 1, 2, 5, 4, 3]  # 词汇 句式 完整 / 语调 流利 发音 around the ring
     def _pt(i, r):
         a = math.radians(90 - i * 60)
@@ -442,11 +491,11 @@ def render(d):
             pp.moveTo(x, y + off) if k == 0 else pp.lineTo(x, y + off)
         pp.close(); return pp
     pp = _data()
-    c.setFillColor(HexColor('#F09A2E')); c.setFillAlpha(0.30); c.drawPath(pp, stroke=0, fill=1); c.setFillAlpha(1)
-    c.setStrokeColor(HexColor('#ED8F24')); c.setLineWidth(2.2); c.setLineJoin(1); c.drawPath(pp, stroke=1, fill=0); c.setLineJoin(0)
+    c.setFillColor(HexColor(T['radar_fill'])); c.setFillAlpha(0.30); c.drawPath(pp, stroke=0, fill=1); c.setFillAlpha(1)
+    c.setStrokeColor(HexColor(T['radar_line'])); c.setLineWidth(2.2); c.setLineJoin(1); c.drawPath(pp, stroke=1, fill=0); c.setLineJoin(0)
     for k, di in enumerate(order):
         x, y = _pt(k, R * d['dims'][di][2] / 5)
-        c.setFillColor(HexColor('#ED8F24')); c.circle(x, y, 3.6, stroke=0, fill=1)
+        c.setFillColor(HexColor(T['radar_line'])); c.circle(x, y, 3.6, stroke=0, fill=1)
         c.setStrokeColor(CARD); c.setLineWidth(1.6); c.circle(x, y, 3.6, stroke=1, fill=0)
     for k, di in enumerate(order):        # names only: the verdict word is said once, in the readings
         nm = d['dims'][di][0]
@@ -477,6 +526,7 @@ def render(d):
     for col, sub in enumerate(('说了什么', '声音怎么样')):
         text(COLX[col], iy - 19, sub, 'SCS', 9, GREY)
     gy = iy - 36
+    tch = d.get('teacher')
     for row in range(3):                 # each row as tall as its longer reading
         pair = (d['dims'][row], d['dims'][row + 3])
         rows_used = max(len(wrap(x[3], 'SCS', 9.5, DESC_W)) for x in pair)
@@ -486,15 +536,41 @@ def render(d):
             text(gx + sw(nm, 'SCB', 11) + 8, gy, wd, 'SCS', 10, INK)
             flowers(gx + 168, gy + 3, n, 0.72)
             para(gx, gy - 14, desc, 'SCS', 9.5, INK, maxw=DESC_W, leading=12.5)
-        gy -= 14 + rows_used * 12.5 + 11
+        gy -= 14 + rows_used * 12.5 + (8 if tch else 11)
+
+    # ---------- 3b. the teacher's note — a human voice between evidence and action.
+    # Only a real comment gets this band; without one the whole block does not exist.
+    if tch:
+        lbl = '老师说'
+        lw = sw(lbl, DISP, 11.5)
+        tx = M + 16 + lw + 20
+        tlines = wrap(str(tch['comment']), 'SCS', 10, M + CW - 18 - tx)
+        sign = (tch.get('sign') or '').strip()
+        top = gy - 5
+        first = top - 21
+        last = first - 13 * (len(tlines) - 1)
+        inline = bool(sign) and (M + CW - 18 - (tx + sw(tlines[-1], 'SCS', 10)) > sw(sign, 'SCS', 9) + 14)
+        bot = last - (0 if (not sign or inline) else 13) - 6
+        c.setFillColor(HexColor(T['field'])); c.roundRect(M, bot, CW, top - bot, 9, stroke=0, fill=1)
+        c.setStrokeColor(HexColor(T['chip_line'])); c.setLineWidth(0.9)
+        c.roundRect(M, bot, CW, top - bot, 9, stroke=1, fill=0)
+        text(M + 16, first, lbl, DISP, 11.5, HexColor(T['quote']))
+        text(tx - 13, first + 1, '“', DISP, 14, HexColor(T['quote']))
+        yy = first
+        for ln in tlines:
+            text(tx, yy, ln, 'SCS', 10, INK); yy -= 13
+        if sign:
+            sy = last if inline else bot + 8
+            text(M + CW - 18 - sw(sign, 'SCS', 9), sy, sign, 'SCS', 9, GREY)
+        gy = bot
 
     # ---------- 4. what to do next ----------
-    ny = gy - 10
+    ny = gy - (30 if tch else 10)
     head(ny, '接下来怎么做')
     _gw = sw(d['goal'], 'SCS', 10.5)
-    c.setFillColor(HexColor('#E7ECF1')); c.rect(M + 59, ny - 36, _gw + 18, 21, stroke=0, fill=1)
-    c.setFillColor(HexColor('#FFF9EA')); c.rect(M + 56, ny - 33, _gw + 18, 21, stroke=0, fill=1)
-    c.setStrokeColor(HexColor('#EFE9DC')); c.setLineWidth(0.8); c.rect(M + 56, ny - 33, _gw + 18, 21, stroke=1, fill=0)
+    c.setFillColor(HexColor(T['chip_shadow'])); c.rect(M + 59, ny - 36, _gw + 18, 21, stroke=0, fill=1)
+    c.setFillColor(HexColor(T['field'])); c.rect(M + 56, ny - 33, _gw + 18, 21, stroke=0, fill=1)
+    c.setStrokeColor(HexColor(T['chip_line'])); c.setLineWidth(0.8); c.rect(M + 56, ny - 33, _gw + 18, 21, stroke=1, fill=0)
     tape(M + 62, ny - 12, 24, 8, -7)
     # baseline sits 0.35em BELOW the chip's centre: PDF text hangs on its baseline,
     # and CJK ink lives almost entirely above it — centre the ink, not the baseline
@@ -507,7 +583,7 @@ def render(d):
         c.setStrokeColor(INK); c.setLineWidth(1.1); c.roundRect(bx, gy - 1.5, 11, 11, 2.5, stroke=1, fill=0)
         text(bx + 20, gy, gn, 'SCB', 10.5, INK)
         para(M + 168, gy, gd, 'SCS', 10, INK, maxw=CW - 168, leading=13)
-        gy -= 20
+        gy -= 18
 
     # ---------- 5. appendix: the transcript ----------
     ay = gy - 16
@@ -520,28 +596,32 @@ def render(d):
         box_bot = ay + 17 - box_h
         if box_bot >= 74: break
     else:
-        raise ValueError(f'内容超出版面 {74 - box_bot:.0f}pt：全文已缩到 8pt，请精简解读或游戏')
-    c.setFillColor(HexColor('#E4E9EF')); c.rect(M - 9, box_bot - 3, CW + 22, box_h, stroke=0, fill=1)
-    c.setFillColor(HexColor('#FFFDF5')); c.rect(M - 12, box_bot, CW + 22, box_h, stroke=0, fill=1)
-    c.setStrokeColor(HexColor('#F0EAD8')); c.setLineWidth(0.8); c.rect(M - 12, box_bot, CW + 22, box_h, stroke=1, fill=0)
+        raise ValueError(f'内容超出版面 {74 - box_bot:.0f}pt：全文已缩到 8pt，请精简解读、游戏或老师评语')
+    c.setFillColor(HexColor(T['box_shadow'])); c.rect(M - 9, box_bot - 3, CW + 22, box_h, stroke=0, fill=1)
+    c.setFillColor(HexColor(T['box_fill'])); c.rect(M - 12, box_bot, CW + 22, box_h, stroke=0, fill=1)
+    c.setStrokeColor(HexColor(T['box_line'])); c.setLineWidth(0.8); c.rect(M - 12, box_bot, CW + 22, box_h, stroke=1, fill=0)
     tape(W / 2, ay + 17, 40, 11, 2)
     text(M, ay, f"附：{d['pro']}说的话（全文）", 'SCB', 10.5, GREY)
-    # the recording itself, as a quiet strip beside the title: the page was measured, not guessed
+    # the recording's length always sits at the box's right edge; the waveform strip only exists when
+    # the audio was actually measured (audio_data.json) — a listening-track page gets the label alone,
+    # never a decorative fake waveform
     _ad = os.path.join(CASE, 'audio_data.json')
+    box_r = M - 12 + CW + 22                     # the box's right edge: label and strip stay inside it
+    lab_w = sw(d['secs'], 'SCS', 8.5)
+    lab_x = box_r - 12 - lab_w
     if os.path.exists(_ad):
         pk = json.load(open(_ad))['peaks']
-        box_r = M - 12 + CW + 22                     # the box's right edge: label and strip stay inside it
-        lab_w = sw(d['secs'], 'SCS', 8.5)
-        lab_x = box_r - 12 - lab_w
         wx0 = max(M + sw(f"附：{d['pro']}说的话（全文）", 'SCB', 10.5) + 24, box_r - 230)
-        ww = lab_x - 8 - wx0; n = max(24, int(ww / 3.05))
-        c.setStrokeColor(HexColor('#C2CCD6')); c.setLineWidth(1.8); c.setLineCap(1)
-        for i in range(n):
-            seg = pk[int(i * len(pk) / n): max(int((i + 1) * len(pk) / n), int(i * len(pk) / n) + 1)]
-            v = max(seg) if seg else 0
-            xx = wx0 + i * ww / (n - 1); h = 1 + v * 9
-            c.line(xx, ay + 3.5 - h / 2, xx, ay + 3.5 + h / 2)
-        text(lab_x, ay, d['secs'], 'SCS', 8.5, GREY)
+        ww = lab_x - 8 - wx0
+        n = max(24, int(ww / 3.05))
+        if ww > 30:
+            c.setStrokeColor(HexColor('#C2CCD6')); c.setLineWidth(1.8); c.setLineCap(1)
+            for i in range(n):
+                seg = pk[int(i * len(pk) / n): max(int((i + 1) * len(pk) / n), int(i * len(pk) / n) + 1)]
+                v = max(seg) if seg else 0
+                xx = wx0 + i * ww / (n - 1); h = 1 + v * 9
+                c.line(xx, ay + 3.5 - h / 2, xx, ay + 3.5 + h / 2)
+    text(lab_x, ay, d['secs'], 'SCS', 8.5, GREY)
     marks = [w_.lower() for w_ in d.get('mark', [])]
     yy = ay - 16
     for ln in lines:
