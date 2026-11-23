@@ -12,7 +12,7 @@ description: 儿童英语口语测评：给一段孩子的英语口语录音或�
 - `report-simple.pdf`：**默认产物**，简版一页（页眉 → 六维雷达 + 老师说 → 逐项解读 → 接下来怎么做），由 `scripts/build_simple.py` 生成；两档路线共用，独立成份——页脚只写参照标准，不提详细版的存在。全文不印在页面上，留在 `case.json` 作记录。
 - `report-simple.pptx`：同一页的**可编辑版**，与 PDF 一起生成（`scripts/export_pptx.py`）：插画与图形合成一张锁定的底图，所有文字都是真文本框——解读、总览、老师说、小目标、游戏各是一段，改长自动换行；印章是可改字的圆角框。老师用 PowerPoint / WPS / Keynote 改字后导出 PDF。字体不随 git 仓库分发（约 22 MB）：先 `python3 scripts/download_fonts.py` 取（Google Fonts / SIL OFL，`assets/fonts`）；打包 zip 分发 skill 时把 `assets/fonts` 一并放入。把 PPT 交给老师时，**由 agent 在老师电脑上运行一次 `python3 scripts/install_fonts.py`**（Windows 用 `py scripts\install_fonts.py`），装进当前用户的字体目录，不要管理员密码，装好后请老师重开 PowerPoint / WPS / Keynote；没装时软件会用自带中文字体代替。卡片、纸条的底是图，文字改得很长时不会跟着变大。
 
-- `report.pdf`：仅实测版：第 1 页正面（成长记录风）+ 第 2 页背面（对标表 + 本次录音技术指标），由 `scripts/build_report.py` 合并。
+- `report.pdf`：仅实测版：第 1 页正面（成长记录风）+ 第 2 页背面（对标表 + 本次录音技术指标），由 `scripts/build_detail.py` 按 `case.json` 的 `detail` 段一次渲染两页（旧的 `build_front.py` / `build_back.py` 把案例写在脚本里，只作版式参照，不再用于新案例）。
 
 - `benchmark-internal.pdf`：仅实测版的内部依据文件（对标表 + 宣传红线），只对内，**永不附在给家长的报告里**。
 
@@ -127,6 +127,14 @@ description: 儿童英语口语测评：给一段孩子的英语口语录音或�
 - 底部实景是**她的声音长成的小山坡**，不是风景画、也不是图标排列：山是用这段录音的声音波纹画的——一排圆头声波竖条立在起伏的坡地上，合成一座山（每个孩子都不一样），录音开始处一个带声波的对话气泡，最响的几根竖条顶上从左到右长出小芽 → 叶 → 花苞 → 开花。山坡和气泡随主题换色，茎叶固定植物绿，花用主题太阳色；实景里不用红，红只给挣来的小红花。不画树、不摆字母块、话筒、音符、星星这类互不相干的图标。
 - 标题与内容同行对齐；照片一律 cover 裁切，永不拉伸。
 - 页脚只有一行「参照剑桥 Starters 与 IELTS 口语标准」，居中放在白色小标签上。
+
+## 详细版两页（`scripts/build_detail.py`，仅实测版）
+
+- 运行：在案例目录 `python3 scripts/build_detail.py [case.json]`，输出 `report.pdf`（两页）。案例内容全部写在 `case.json` 的 `detail` 段，脚本按案例排版，不按案例修改。
+- `detail` 段字段：`stage`（萌芽/成长/绽放/闪耀）、`season`、`polaroid_caption`、`bubbles`（每条含 label、en、sentence、t、start、end、color、comment、under）、`content`（summary、strips[3 × 名称/花数/印章词]、word_groups、exhibits）、`sound`（summary、cols[3 × 维度/IELTS 名/花数/印章词/解读]）、`teacher`（hand、pill、body）、`back`（meta、position、rows[6 × 编号/维度/IELTS/参照/证据]、indicators[6 × 大数字/单位/说明]、method）。
+- 数据源固定：气泡时间轴与下方「声音大小 / 声音高低」图取自 `audio_data.json`（音频总长由 peaks 算，不手填）；停顿带与秒数从 `analysis.json` 的句间间隔算（≥0.6 秒才画）；六个技术指标与每维证据必须与 `analysis.json` / `sound_scores.json` 对得上。
+- 气泡 2–4 条皆可：条数、句子长短、时间区间都按实际录音填，版面自动往下排；三条首尾相接覆盖整段录音。
+- 详细版只在实测路线出；听评档没有测量值，不出这两页。两页与简版不混装。
 
 ## 对外表述边界
 

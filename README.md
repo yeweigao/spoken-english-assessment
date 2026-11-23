@@ -30,7 +30,7 @@ python3 scripts/pick_frame.py input.mp4            # 视频：先出联系表选
 python3 scripts/extract_audio_data.py speech-16k.wav
 python3 scripts/transcribe.py && python3 scripts/analyze.py && python3 scripts/score_sound.py
 python3 scripts/build_simple.py
-python3 scripts/build_front.py && python3 scripts/build_back.py && python3 scripts/build_report.py
+python3 scripts/build_detail.py            # 详细版两页 report.pdf（案例内容写在 case.json 的 detail 段）
 ```
 
 完整规程（路线选择、分析方法、量规、排版法、对外表述边界、验收清单）在 [SKILL.md](SKILL.md)；听评两遍听协议在 [references/listen-track.md](references/listen-track.md)；量规锚点在 [references/rubric.md](references/rubric.md)；版式与文字体系（含六套主题、老师说）在 [references/type-system.md](references/type-system.md)；完整范例两个：[examples/toto-2026-11-09](examples/toto-2026-11-09)（纯音频）与 [examples/apple-2026-11-10](examples/apple-2026-11-10)（真实视频输入），出于隐私，范例不含录音/视频原件与成品 PDF，只保留实测数据。
