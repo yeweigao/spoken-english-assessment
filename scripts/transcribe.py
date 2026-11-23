@@ -7,7 +7,7 @@ Writes asr/<system>.json = [{"w": "Hello,", "s": 0.72, "e": 1.06, "p": 0.98}, ..
   whisper-small   faster-whisper small.en   (word probability p)
   whisper-medium  faster-whisper medium.en  (word probability p)
   parakeet        NVIDIA Parakeet TDT 0.6b v2 through sherpa-onnx; no p
-All models run locally on CPU (no API key, the audio never leaves the machine). Get them once with
+All models run locally on CPU (no API key). Get them once with
 scripts/download_models.py into assets/models/ — this script uses them from there. Without them,
 Whisper falls back to downloading into the Hugging Face cache, and PARAKEET_DIR can point elsewhere.
 Three strong systems are the standard. Vosk small is NOT used: on a child's voice it returns
