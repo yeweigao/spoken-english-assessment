@@ -399,11 +399,11 @@ def render(d):
         """Verdict word as a little stamp: white card, coloured edge and text by flower count
         (green >= 4, amber 3, red below) — the same reading as the detailed page's stamps."""
         scol = HexColor('#2E9E4F') if n >= 4 else (HexColor('#D9930D') if n == 3 else HexColor('#C73E1D'))
-        tw2 = sw(wd, 'SCB', 9) + 14
+        tw2 = sw(wd, DISP, 10) + 15
         c.saveState(); c.translate(x + tw2 / 2, ybase + 3.6); c.rotate(tilt)
         c.setFillColor(CARD); c.setStrokeColor(scol); c.setLineWidth(1.0)
-        c.roundRect(-tw2 / 2, -7.6, tw2, 15, 7.5, stroke=1, fill=1)
-        c.setFillColor(scol); c.setFont('SCB', 9); c.drawString(-tw2 / 2 + 7, -3.6, wd)
+        c.roundRect(-tw2 / 2, -7.8, tw2, 15.4, 7.7, stroke=1, fill=1)
+        c.setFillColor(scol); c.setFont(DISP, 10); c.drawString(-tw2 / 2 + 7.5, -4.2, wd)
         c.restoreState()
         return tw2
 
@@ -473,47 +473,85 @@ def render(d):
         _rp = c.beginPath(); _rp.roundRect(-4.5, SUN_R + 9, 9, 22, 4.5); c.drawPath(_rp, stroke=0, fill=1)
         c.restoreState()
     c.circle(_sx, _sy, SUN_R, stroke=0, fill=1)
-    # a proper little landscape along the bottom: two soft hill layers,
-    # trees, bushes, grass and two tiny flowers — drawn, not a lone line
-    _bp2 = c.beginPath(); _bp2.moveTo(E, 104)
-    for _x0, _y0, _x1, _y1 in [(E, 104, 150, 94), (150, 94, 300, 102), (300, 102, 450, 93), (450, 93, W - E, 99)]:
+    # the bottom scene says what this report is about: English letters, a speech bubble, a
+    # microphone, two notes for intonation, a star and the score flowers — flat, matte, one family
+    _bp2 = c.beginPath(); _bp2.moveTo(E, 84)
+    for _x0, _y0, _x1, _y1 in [(E, 84, 150, 76), (150, 76, 300, 83), (300, 83, 450, 75), (450, 75, W - E, 80)]:
         _bp2.curveTo(_x0 + (_x1 - _x0) * 0.5, _y0, _x1 - (_x1 - _x0) * 0.5, _y1, _x1, _y1)
     _bp2.lineTo(W - E, E); _bp2.lineTo(E, E); _bp2.close()
     c.setFillColor(HexColor(T['hill1'])); c.drawPath(_bp2, stroke=0, fill=1)
-    _fp2 = c.beginPath(); _fp2.moveTo(E, 74)
-    for _x0, _y0, _x1, _y1 in [(E, 74, 160, 66), (160, 66, 320, 73), (320, 73, 460, 65), (460, 65, W - E, 70)]:
+    _fp2 = c.beginPath(); _fp2.moveTo(E, 56)
+    for _x0, _y0, _x1, _y1 in [(E, 56, 160, 50), (160, 50, 320, 55), (320, 55, 460, 49), (460, 49, W - E, 53)]:
         _fp2.curveTo(_x0 + (_x1 - _x0) * 0.5, _y0, _x1 - (_x1 - _x0) * 0.5, _y1, _x1, _y1)
     _fp2.lineTo(W - E, E); _fp2.lineTo(E, E); _fp2.close()
     c.setFillColor(HexColor(T['hill2'])); c.drawPath(_fp2, stroke=0, fill=1)
-    # bushes
-    c.setFillColor(HexColor(T['bush']))
-    for _b0, _b1 in ((186, 232), (328, 366), (44, 74)):
-        c.ellipse(_b0, 60, _b1, 80, stroke=0, fill=1)
-        c.ellipse(_b0 + 8, 70, _b1 - 8, 87, stroke=0, fill=1)
-    # the big tree, right
-    c.setFillColor(HexColor(T['trunk'])); c.rect(502, 66, 6, 26, stroke=0, fill=1)
-    c.setFillColor(HexColor(T['leaf']))
-    c.circle(505, 102, 18, stroke=0, fill=1); c.circle(491, 88, 12, stroke=0, fill=1); c.circle(519, 89, 13, stroke=0, fill=1)
-    c.setFillColor(HexColor('#F0563F')); c.circle(497, 99, 2.7, stroke=0, fill=1); c.circle(514, 108, 2.7, stroke=0, fill=1); c.circle(506, 88, 2.4, stroke=0, fill=1)
-    # a small tree, left
-    c.setFillColor(HexColor(T['trunk'])); c.rect(118, 72, 5, 18, stroke=0, fill=1)
-    c.setFillColor(HexColor(T['leaf']))
-    c.circle(120, 100, 13, stroke=0, fill=1); c.circle(110, 90, 9, stroke=0, fill=1); c.circle(130, 91, 9.5, stroke=0, fill=1)
     # grass tufts along the crests
     c.setStrokeColor(HexColor(T['leaf'])); c.setLineWidth(1.5)
-    for gx2, gy2 in [(160, 78), (268, 70), (404, 66), (452, 62), (356, 84), (70, 86)]:
-        c.line(gx2, gy2, gx2 - 4, gy2 + 10); c.line(gx2 + 5, gy2, gx2 + 5, gy2 + 11); c.line(gx2 + 10, gy2, gx2 + 14, gy2 + 10)
-    # two tiny flowers on stems, same glyph as the score flowers
+    for gx2, gy2 in [(84, 68), (188, 58), (252, 56), (312, 56), (394, 55), (470, 57), (528, 62)]:
+        c.line(gx2, gy2, gx2 - 4, gy2 + 9); c.line(gx2 + 5, gy2, gx2 + 5, gy2 + 10); c.line(gx2 + 10, gy2, gx2 + 14, gy2 + 9)
+    # two alphabet blocks
+    def block(cx, cy, side, ang, letter, fill, ink=None):
+        c.saveState(); c.translate(cx, cy); c.rotate(ang)
+        c.setFillColor(HexColor(fill)); c.roundRect(-side / 2, -side / 2, side, side, 3.5, stroke=0, fill=1)
+        if ink:
+            c.setStrokeColor(HexColor(ink)); c.setLineWidth(1.2)
+            c.roundRect(-side / 2, -side / 2, side, side, 3.5, stroke=1, fill=0)
+        c.setFillColor(HexColor(ink) if ink else CARD); c.setFont('ENB', side * 0.52)
+        c.drawCentredString(0, -side * 0.19, letter)
+        c.restoreState()
+    block(112, 68, 25, -7, 'A', T['sun'])
+    block(139, 62, 23, 5, 'B', '#FFFFFF', ink=T['frame'])
+    # a speech bubble with three dots — the tail is drawn first, the bubble covers its seam
+    _bx, _by = 164, 74
+    _tp = c.beginPath(); _tp.moveTo(_bx + 12, _by + 6); _tp.lineTo(_bx + 5, _by - 8); _tp.lineTo(_bx + 30, _by + 3)
+    _tp.close()
+    c.setFillColor(CARD); c.setStrokeColor(HexColor(T['frame'])); c.setLineWidth(1.4)
+    c.drawPath(_tp, stroke=1, fill=1)
+    c.setFillColor(CARD); c.roundRect(_bx, _by, 54, 27, 9, stroke=1, fill=1)
+    c.setStrokeColor(HexColor(T['frame'])); c.setLineWidth(1.4)
+    c.roundRect(_bx, _by, 54, 27, 9, stroke=1, fill=0)
+    c.setFillColor(HexColor(T['quote']))
+    for _dx in (17, 27, 37):
+        c.circle(_bx + _dx, _by + 13.5, 2.4, stroke=0, fill=1)
+    # a microphone on its stand
+    _mx = 286
+    c.setFillColor(HexColor(T['trunk']))
+    c.rect(_mx - 1.3, 56, 2.6, 18, stroke=0, fill=1)
+    c.roundRect(_mx - 9, 53.5, 18, 3.6, 1.8, stroke=0, fill=1)
+    c.setFillColor(HexColor(T['quote']))
+    c.roundRect(_mx - 8.5, 72, 17, 26, 8.5, stroke=0, fill=1)
+    c.setStrokeColor(CARD); c.setLineWidth(1.1); c.setLineCap(1)
+    for _gy in (80, 85, 90):
+        c.line(_mx - 4.5, _gy, _mx + 4.5, _gy)
+    c.setLineCap(0)
+    # two eighth notes for intonation
+    c.setFillColor(HexColor(T['quote']))
+    for _nx, _ny in ((332, 70), (356, 76)):
+        c.saveState(); c.translate(_nx, _ny); c.rotate(-20)
+        c.ellipse(-5.2, -3.4, 5.2, 3.4, stroke=0, fill=1); c.restoreState()
+        c.rect(_nx + 3.4, _ny, 2.2, 82.6 - _ny, stroke=0, fill=1)        # stems meet the beam
+    c.rect(331.5, 78, 27, 4.6, stroke=0, fill=1)                        # the beam
+    # a star and a sparkle
+    def star(cx, cy, r, fill, stroke):
+        _p = c.beginPath()
+        for _i in range(10):
+            _a = math.radians(90 + _i * 36)
+            _rr = r if _i % 2 == 0 else r * 0.45
+            _x, _y = cx + _rr * math.cos(_a), cy + _rr * math.sin(_a)
+            _p.moveTo(_x, _y) if _i == 0 else _p.lineTo(_x, _y)
+        _p.close()
+        c.setFillColor(HexColor(fill)); c.setStrokeColor(HexColor(stroke)); c.setLineWidth(1.1)
+        c.drawPath(_p, stroke=1, fill=1)
+    star(420, 84, 9, '#FFC93C', '#E8930C')
+    sparkle_r(443, 76, 3.4, HexColor('#E8930C'))
+    # the two score flowers, same glyph as the ones in the readings
     c.setStrokeColor(HexColor(T['leaf'])); c.setLineWidth(1.5)
-    c.line(168, 74, 168, 90); c.line(430, 70, 430, 86)
-    _tiny_flowers = [(168, 95), (430, 91)]
+    c.line(72, 62, 72, 72); c.line(540, 58, 540, 68)
+    flower1(72, 77, 0.8, True); flower1(540, 73, 0.8, True)
 
     # the yellow board frame — everything is pinned inside it. Its outer edge sits 14pt (5 mm)
     # in from the paper edge, inside what an office or home printer can actually print.
     c.setStrokeColor(HexColor(T['frame'])); c.setLineWidth(8); c.rect(E - 4, E - 4, W - 2 * E + 8, H - 2 * E + 8, stroke=1, fill=0)
-
-    for _fx, _fy in _tiny_flowers:
-        flower1(_fx, _fy, 0.8, True)
     # ---------- 1. header: identity + overall ----------
     text(M, H - 46, '英语口语测评报告', DISP, 25, INK)
     text(M, H - 68, f"姓名 {d['name']} · 课题 {d['topic']} · 录音 {d['secs']} · {d['date']}", 'SCS', 10.5, INK)
