@@ -23,7 +23,9 @@ references/type-system.md, section 简版一页):
   word lives in the readings), the overview speaks in conclusions without
   measurements, the readings carry the evidence. validate() enforces this.
 - Illustrations are all hand-drawn flat vector shapes in one family (rounded,
-  matte, no emoji, no gloss): sun, clouds, flowers, the bottom landscape.
+  matte, no emoji, no gloss): sun, clouds, flowers, and the bottom scene — the child's own
+  recording drawn as a hill of rounded waveform bars, a speech bubble where her voice begins, and plants growing on the
+  loudest crests from seedling to bloom (no trees, no row of unrelated icons, no red).
 Run with the case's case.json (default ./case.json); the photo and audio_data.json sit beside it.
 Nothing in this script is edited per child."""
 from reportlab.pdfgen import canvas
@@ -163,7 +165,8 @@ def wrap(s, font, size, maxw):
             while lines[-1][0] in CLOSE and len(lines[-2]) > 1:      # keep kinsoku after the pull
                 lines[-1] = lines[-2][-1] + lines[-1]; lines[-2] = lines[-2][:-1]
     # English text: the last line carries at least two words (no lone "me!")
-    if len(lines) > 1 and len(lines[-1].split()) < 2 and len(lines[-2].split()) > 3 and ' ' in lines[-2]:
+    if (len(lines) > 1 and lines[-1].isascii() and lines[-2].isascii()        # English lines only: a Chinese
+            and len(lines[-1].split()) < 2 and len(lines[-2].split()) > 3):     # line has no spaces to count
         head, last = lines[-2].rsplit(' ', 1)
         lines[-2], lines[-1] = head, last + ' ' + lines[-1]
     return lines
@@ -175,7 +178,7 @@ def wrap(s, font, size, maxw):
 # games[3 × [name, how]], script, teacher{comment, sign} (optional, real source only).
 # The recording length on the page comes from audio_data.json (50 ms windows), so it can't drift.
 import sys
-CASE_FILE = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else 'case.json')
+CASE_FILE = os.path.abspath(next((a for a in sys.argv[1:] if not a.startswith('--')), 'case.json'))
 if not os.path.isfile(CASE_FILE):
     raise SystemExit(f'找不到 {CASE_FILE}：案例数据写在案例目录的 case.json 里（范例见 examples/*/case.json）')
 CASE = os.path.dirname(CASE_FILE)
@@ -191,6 +194,18 @@ def load_case(path):
     d.setdefault('out', 'report-simple.pdf'); d.setdefault('task', 'speak')
     d.setdefault('theme', 'cream')
     ad = os.path.join(CASE, 'audio_data.json')
+    if not os.path.isfile(ad) and d.get('audio'):
+        # take the loudness envelope here, on this machine: it only shapes the bottom hill and
+        # never prints a number — the listening route can use it without becoming a measurement
+        _src = os.path.join(CASE, d['audio'])
+        if os.path.isfile(_src):
+            try:
+                import extract_audio_data
+                _dat = extract_audio_data.extract(_src)
+                json.dump({'peaks': _dat['peaks'], 'f0': _dat['f0']}, open(ad, 'w'))
+                print(f"（波形：本机取 {len(_dat['peaks'])} 段包络 → audio_data.json，不上云、不印数字）")
+            except Exception as _e:
+                print(f'（波形：{d["audio"]} 取不到包络（{_e}），底部只画平缓山坡）')
     if os.path.isfile(ad):
         d['secs'] = fmt_secs(len(json.load(open(ad))['peaks']) * 0.05)
     elif 'secs' not in d:
@@ -225,16 +240,26 @@ def common_run(a, b):
 
 def validate(d):
     """Fail with a message the writer can act on, before anything is drawn."""
+    if d.get('img') and not os.path.isfile(os.path.join(CASE, d['img'])):
+        raise ValueError(f"找不到照片 {d['img']}：放进案例目录（视频用 pick_frame.py 选一帧），或改 case.json 的 photo")
     if d.get('task', 'speak') not in ('speak', 'read'):
         raise ValueError('task 只能是 speak（自由表达）或 read（朗读现成文本）')
     if d.get('theme') not in THEMES:
         raise ValueError('theme 只能是 ' + ' / '.join(f'{k}（{v["label"]}）' for k, v in THEMES.items()))
     tch = d.get('teacher')
     if tch:
-        if not str(tch.get('comment') or '').strip():
-            raise ValueError('teacher 要么整段不写，要么写 comment（老师评语原文）；没有真实评语就删掉 teacher')
+        cm = str(tch.get('comment') or '').strip()
+        if not cm:
+            raise ValueError('teacher.comment 为空：老师说由 AI 依本次测评写四五句')
         if note_height(d) > 150:
             raise ValueError('老师评语放进便利贴超过六行，请精简到四五句')
+        m = MEASURE.search(cm)
+        if m:
+            raise ValueError(f'老师说含测量值「{m.group()}」：数字证据只写在逐项解读里，老师说只说人话')
+        for nm, _, _, desc in d['dims']:
+            run = common_run(cm, desc)
+            if len(run) >= 7:
+                raise ValueError(f'老师说与「{nm}」解读重复了「{run}」：换一种说法，或删掉其中一处')
     elif not (2 <= len(d.get('overview') or []) <= 4):
         raise ValueError('没有 teacher 时必须写 overview 2–4 条（有老师评语时右栏被评语占用，overview 可省略）')
     if d.get('task') == 'read' and not d.get('original'):
@@ -308,16 +333,29 @@ def top_layout(d):
 
 SUN_R, SUN_C = 138, (W - 30, H - 16)
 
-def render(d):
+CAP = None        # set to a list by render(d, capture=...): text is recorded for the PPT instead of drawn
+
+def render(d, capture=None, out=None):
+    global CAP
+    CAP = capture
     validate(d)
     L = top_layout(d)
     T = THEMES[d['theme']]
-    c = canvas.Canvas(os.path.join(CASE, d['out']), pagesize=A4)
+    # every font in the file is embedded: start on Noto instead of ReportLab's default (unembedded) Helvetica
+    c = canvas.Canvas(out or os.path.join(CASE, d['out']), pagesize=A4, initialFontName='SCS', initialFontSize=10)
+    ctx = {'off': (0, 0, 0)}        # page offset + rotation of the frame text is drawn in (sticky note)
     def text(x, y, s, f='SCS', size=10, color=INK):
+        if CAP is not None:
+            ox_, oy_, rot_ = ctx['off']
+            CAP.append(dict(t='line', x=x + ox_, y=y + oy_, s=s, f=f, size=size, color=color.hexval()[2:], rot=rot_)); return
         c.setFont(f, size); c.setFillColor(color); c.drawString(x, y, s)
     def textC(cx, y, s, f='SCS', size=10, color=INK):
         text(cx - sw(s, f, size) / 2, y, s, f, size, color)
     def para(x, ytop, s, f='SCS', size=9.5, color=INK, maxw=240, leading=12.5):
+        if CAP is not None:
+            CAP.append(dict(t='para', x=x, y=ytop, runs=[(s, f, False)], size=size, color=color.hexval()[2:],
+                            maxw=maxw, leading=leading, rot=0))
+            return ytop - len(wrap(s, f, size, maxw)) * leading
         yy = ytop
         for ln in wrap(s, f, size, maxw):
             text(x, yy, ln, f, size, color); yy -= leading
@@ -399,12 +437,19 @@ def render(d):
         """Verdict word as a little stamp: white card, coloured edge and text by flower count
         (green >= 4, amber 3, red below) — the same reading as the detailed page's stamps."""
         scol = HexColor('#2E9E4F') if n >= 4 else (HexColor('#D9930D') if n == 3 else HexColor('#C73E1D'))
-        tw2 = sw(wd, DISP, 10) + 15
-        c.saveState(); c.translate(x + tw2 / 2, ybase + 3.6); c.rotate(tilt)
-        c.setFillColor(CARD); c.setStrokeColor(scol); c.setLineWidth(1.0)
-        c.roundRect(-tw2 / 2, -7.8, tw2, 15.4, 7.7, stroke=1, fill=1)
-        c.setFillColor(scol); c.setFont(DISP, 10); c.drawString(-tw2 / 2 + 7.5, -4.2, wd)
-        c.restoreState()
+        # same hand as 老师说 (ZCOOL KuaiLe), drawn lighter: the glyphs are filled in colour and
+        # traced with a 0.4pt white outline (text render mode 2), which pares every stroke thinner
+        tw2 = sw(wd, DISP, 10) + 13
+        if CAP is not None:
+            CAP.append(dict(t='stamp', x=x, y=ybase + 3.8 - 7.6, w=tw2, h=15.2, s=wd, color=scol.hexval()[2:], rot=tilt))
+            return tw2
+        c.saveState(); c.translate(x + tw2 / 2, ybase + 3.8); c.rotate(tilt)
+        c.setFillColor(CARD); c.setStrokeColor(scol); c.setLineWidth(0.7)
+        c.roundRect(-tw2 / 2, -7.6, tw2, 15.2, 7.6, stroke=1, fill=1)
+        t_ = c.beginText(-tw2 / 2 + 6.5, -3.9); t_.setFont(DISP, 10); t_.setFillColor(scol)
+        t_.setTextRenderMode(2); c.setStrokeColor(CARD); c.setLineWidth(0.4)
+        t_.textOut(wd); c.drawText(t_)
+        c.restoreState()                 # the render mode lives in the graphics state: restore it here
         return tw2
 
     def head(y, t):
@@ -425,13 +470,19 @@ def render(d):
         c.setFillColor(HexColor(T['field'])); c.roundRect(x0, -h / 2, NOTE_W, h, 6, stroke=0, fill=1)
         c.setStrokeColor(HexColor(T['chip_line'])); c.setLineWidth(0.9)
         c.roundRect(x0, -h / 2, NOTE_W, h, 6, stroke=1, fill=0)
+        ctx['off'] = (cx, cy, -1.3)
         text(x0 + 16, ty0 - 17, '老师说', DISP, 12, HexColor(T['quote']))
-        text(x0 + 14, ty0 - 41, '“', DISP, 23, HexColor(T['quote']))
+        c.setFont(DISP, 23); c.setFillColor(HexColor(T['quote'])); c.drawString(x0 + 14, ty0 - 41, '“')   # part of the card
         yy = ty0 - 39
-        for ln in lines:
-            text(x0 + 30, yy, ln, 'SCS', 9.5, INK); yy -= NOTE_LEAD
+        if CAP is not None:
+            CAP.append(dict(t='para', x=cx + x0 + 30, y=cy + yy, runs=[(str(d['teacher']['comment']), 'SCS', False)], size=9.5,
+                            color='141414', maxw=NOTE_W - 48, leading=NOTE_LEAD, rot=-1.3))
+        else:
+            for ln in lines:
+                text(x0 + 30, yy, ln, 'SCS', 9.5, INK); yy -= NOTE_LEAD
         if sign:
             text(x0 + NOTE_W - 16 - sw(sign, 'SCS', 8.5), -h / 2 + 10, sign, 'SCS', 8.5, GREY)
+        ctx['off'] = (0, 0, 0)
         c.restoreState()
         tape(cx, top - 2, 46, 12, -2)
 
@@ -473,81 +524,124 @@ def render(d):
         _rp = c.beginPath(); _rp.roundRect(-4.5, SUN_R + 9, 9, 22, 4.5); c.drawPath(_rp, stroke=0, fill=1)
         c.restoreState()
     c.circle(_sx, _sy, SUN_R, stroke=0, fill=1)
-    # the bottom scene says what this report is about: English letters, a speech bubble, a
-    # microphone, two notes for intonation, a star and the score flowers — flat, matte, one family
-    _bp2 = c.beginPath(); _bp2.moveTo(E, 84)
-    for _x0, _y0, _x1, _y1 in [(E, 84, 150, 76), (150, 76, 300, 83), (300, 83, 450, 75), (450, 75, W - E, 80)]:
-        _bp2.curveTo(_x0 + (_x1 - _x0) * 0.5, _y0, _x1 - (_x1 - _x0) * 0.5, _y1, _x1, _y1)
-    _bp2.lineTo(W - E, E); _bp2.lineTo(E, E); _bp2.close()
-    c.setFillColor(HexColor(T['hill1'])); c.drawPath(_bp2, stroke=0, fill=1)
-    _fp2 = c.beginPath(); _fp2.moveTo(E, 56)
-    for _x0, _y0, _x1, _y1 in [(E, 56, 160, 50), (160, 50, 320, 55), (320, 55, 460, 49), (460, 49, W - E, 53)]:
-        _fp2.curveTo(_x0 + (_x1 - _x0) * 0.5, _y0, _x1 - (_x1 - _x0) * 0.5, _y1, _x1, _y1)
-    _fp2.lineTo(W - E, E); _fp2.lineTo(E, E); _fp2.close()
-    c.setFillColor(HexColor(T['hill2'])); c.drawPath(_fp2, stroke=0, fill=1)
-    # grass tufts along the crests
-    c.setStrokeColor(HexColor(T['leaf'])); c.setLineWidth(1.5)
-    for gx2, gy2 in [(84, 68), (188, 58), (252, 56), (312, 56), (394, 55), (470, 57), (528, 62)]:
-        c.line(gx2, gy2, gx2 - 4, gy2 + 9); c.line(gx2 + 5, gy2, gx2 + 5, gy2 + 10); c.line(gx2 + 10, gy2, gx2 + 14, gy2 + 9)
-    # two alphabet blocks
-    def block(cx, cy, side, ang, letter, fill, ink=None):
-        c.saveState(); c.translate(cx, cy); c.rotate(ang)
-        c.setFillColor(HexColor(fill)); c.roundRect(-side / 2, -side / 2, side, side, 3.5, stroke=0, fill=1)
-        if ink:
-            c.setStrokeColor(HexColor(ink)); c.setLineWidth(1.2)
-            c.roundRect(-side / 2, -side / 2, side, side, 3.5, stroke=1, fill=0)
-        c.setFillColor(HexColor(ink) if ink else CARD); c.setFont('ENB', side * 0.52)
-        c.drawCentredString(0, -side * 0.19, letter)
-        c.restoreState()
-    block(112, 68, 25, -7, 'A', T['sun'])
-    block(139, 62, 23, 5, 'B', '#FFFFFF', ink=T['frame'])
-    # a speech bubble with three dots — the tail is drawn first, the bubble covers its seam
-    _bx, _by = 164, 74
-    _tp = c.beginPath(); _tp.moveTo(_bx + 12, _by + 6); _tp.lineTo(_bx + 5, _by - 8); _tp.lineTo(_bx + 30, _by + 3)
-    _tp.close()
-    c.setFillColor(CARD); c.setStrokeColor(HexColor(T['frame'])); c.setLineWidth(1.4)
-    c.drawPath(_tp, stroke=1, fill=1)
-    c.setFillColor(CARD); c.roundRect(_bx, _by, 54, 27, 9, stroke=1, fill=1)
-    c.setStrokeColor(HexColor(T['frame'])); c.setLineWidth(1.4)
-    c.roundRect(_bx, _by, 54, 27, 9, stroke=1, fill=0)
-    c.setFillColor(HexColor(T['quote']))
-    for _dx in (17, 27, 37):
-        c.circle(_bx + _dx, _by + 13.5, 2.4, stroke=0, fill=1)
-    # a microphone on its stand
-    _mx = 286
-    c.setFillColor(HexColor(T['trunk']))
-    c.rect(_mx - 1.3, 56, 2.6, 18, stroke=0, fill=1)
-    c.roundRect(_mx - 9, 53.5, 18, 3.6, 1.8, stroke=0, fill=1)
-    c.setFillColor(HexColor(T['quote']))
-    c.roundRect(_mx - 8.5, 72, 17, 26, 8.5, stroke=0, fill=1)
-    c.setStrokeColor(CARD); c.setLineWidth(1.1); c.setLineCap(1)
-    for _gy in (80, 85, 90):
-        c.line(_mx - 4.5, _gy, _mx + 4.5, _gy)
+    # ===== the bottom scene: her voice, grown into a hill =====
+    # The front hill's ridge IS this child's recording — the loudness envelope from audio_data.json,
+    # smoothed into rolling hills, so every report has its own skyline. On the loudest crests small
+    # plants grow, a little bigger from left to right — seedling, leaves, bud, bloom — the same
+    # direction the radar and the readings read: what she said is already growing. A speech
+    # bubble with a sound wave in it sits where her voice begins. The plants bloom in the theme's
+    # sun colour, never red: red stays reserved for earned flowers.
+    X0, X1, BASE, AMP, NPT = E, W - E, 51, 30, 92
+    _env = None
+    _ad = os.path.join(CASE, 'audio_data.json')
+    if os.path.isfile(_ad):
+        _pk = [float(v) for v in json.load(open(_ad)).get('peaks', [])]
+        if len(_pk) >= 20:
+            _bins = [max(_pk[int(i * len(_pk) / NPT):max(int(i * len(_pk) / NPT) + 1, int((i + 1) * len(_pk) / NPT))]) for i in range(NPT)]
+            _ker = [math.exp(-(k * k) / (2 * 0.85 ** 2)) for k in range(-5, 6)]
+            _sm = []
+            for i in range(NPT):
+                _acc = _wt = 0.0
+                for k, w_ in zip(range(-5, 6), _ker):
+                    if 0 <= i + k < NPT: _acc += _bins[i + k] * w_; _wt += w_
+                _sm.append(_acc / _wt)
+            _top = sorted(_sm)[int(0.92 * (NPT - 1))] or 1.0
+            _env = [min(1.0, v / _top) for v in _sm]
+    _real = _env is not None
+    if _env is None:                       # no recording data: a calm default skyline
+        _env = [0.45 + 0.3 * math.sin(i / NPT * math.pi * 3.2 + 0.6) ** 2 for i in range(NPT)]
+    _env = [v * min(1.0, (i + 1) / 6, (NPT - i) / 6) for i, v in enumerate(_env)]     # land softly at both edges
+    _px = [X0 + (X1 - X0) * i / (NPT - 1) for i in range(NPT)]
+    _py = [BASE + AMP * v ** 0.8 for v in _env]
+
+    def _smooth_path(xs, ys, floor):
+        p_ = c.beginPath(); p_.moveTo(xs[0], floor); p_.lineTo(xs[0], ys[0])
+        for i in range(len(xs) - 1):                       # Catmull-Rom through every point
+            x0_, y0_ = (xs[i - 1], ys[i - 1]) if i else (xs[i], ys[i])
+            x3_, y3_ = (xs[i + 2], ys[i + 2]) if i + 2 < len(xs) else (xs[i + 1], ys[i + 1])
+            p_.curveTo(xs[i] + (xs[i + 1] - x0_) / 6, ys[i] + (ys[i + 1] - y0_) / 6,
+                       xs[i + 1] - (x3_ - xs[i]) / 6, ys[i + 1] - (y3_ - ys[i]) / 6, xs[i + 1], ys[i + 1])
+        p_.lineTo(xs[-1], floor); p_.close(); return p_
+
+    # the voice hill is drawn the way a recording is drawn: a row of rounded waveform bars, one per
+    # slice of the recording, standing on a gently rolling ground so it still reads as a hill
+    _soft = [sum(_env[max(0, i - 9):i + 10]) / len(_env[max(0, i - 9):i + 10]) for i in range(NPT)]
+    _gy = [BASE - 10 + 6 * math.sin(i / NPT * math.pi * 2.3 + 0.5) + 10 * v for i, v in enumerate(_soft)]
+    _py = [g + 3 + AMP * v ** 1.25 for g, v in zip(_gy, _env)]          # each bar rises from the ground by her loudness
+    c.setFillColor(HexColor(T['hill2'])); c.drawPath(_smooth_path(_px, _gy, E), stroke=0, fill=1)
+    _bw = (X1 - X0) / NPT * 0.68
+    if not _real:                          # no recording: a plain hill — never a made-up waveform
+        c.drawPath(_smooth_path(_px, _py, E), stroke=0, fill=1)
+    for i in (range(1, NPT - 1) if _real else ()):
+        top = max(_py[i], _gy[i] + _bw)
+        c.roundRect(_px[i] - _bw / 2, _gy[i] - 4, _bw, top - _gy[i] + 4, _bw / 2, stroke=0, fill=1)
+
+    # where the plants stand: local crests, the highest first, kept apart; then left to right
+    _lead = 0
+    while _lead < NPT - 1 and _env[_lead] < 0.35: _lead += 1          # where her voice begins
+    _cand = [i for i in range(4, NPT - 4) if _env[i] >= max(_env[max(0, i - 4):i + 5]) and _env[i] > 0.35]
+    _cand.sort(key=lambda i: -_env[i])
+    _spots = []
+    for i in _cand:
+        if _px[i] < _px[_lead] + 70 or _px[i] > X1 - 30: continue
+        if abs(_px[i] - W / 2) < 70 and _py[i] < 60: continue             # keep clear of the footer label
+        if all(abs(_px[i] - _px[j]) >= 62 for j in _spots): _spots.append(i)
+        if len(_spots) == 5: break
+    _spots.sort()
+    if not _real:                          # no recording data: no plants either — nothing here is invented
+        _spots = []
+    LEAF = HexColor('#7CB342')        # plants stay plant-green in every theme; only the hills take the theme
+
+    def _leaf(x, y, l, ang):
+        c.saveState(); c.translate(x, y); c.rotate(ang)
+        lp = c.beginPath(); lp.moveTo(0, 0); lp.curveTo(l * 0.35, l * 0.42, l * 0.75, l * 0.36, l, 0)
+        lp.curveTo(l * 0.75, -l * 0.2, l * 0.35, -l * 0.22, 0, 0); lp.close()
+        c.setFillColor(LEAF); c.drawPath(lp, stroke=0, fill=1); c.restoreState()
+
+    def _plant(x, y, stage):
+        """0 seedling · 1 two leaves · 2 taller, three leaves · 3 bud · 4 bloom — one drawing family."""
+        h = (7, 11, 15, 18, 19)[stage]
+        c.setStrokeColor(LEAF); c.setLineWidth(1.6); c.setLineCap(1)
+        c.line(x, y - 1, x, y + h); c.setLineCap(0)
+        ll = (6, 8, 9, 9, 9.5)[stage]
+        if stage == 0:
+            _leaf(x, y + h, ll, 25); _leaf(x, y + h, ll, 155)
+        else:
+            _leaf(x, y + h * 0.42, ll, 28); _leaf(x, y + h * 0.42 + 2, ll, 152)
+        if stage >= 2: _leaf(x, y + h * 0.75, ll * 0.8, 32)
+        if stage == 3:                                    # a closed bud: teardrop on two small sepals
+            bp = c.beginPath(); bp.moveTo(x, y + h + 13)
+            bp.curveTo(x + 6.5, y + h + 7, x + 5, y + h, x, y + h); bp.curveTo(x - 5, y + h, x - 6.5, y + h + 7, x, y + h + 13)
+            bp.close(); c.setFillColor(HexColor(T['sun'])); c.drawPath(bp, stroke=0, fill=1)
+            _leaf(x, y + h + 0.5, 5, 40); _leaf(x, y + h + 0.5, 5, 140)
+        if stage == 4:
+            flower1(x, y + h + 8, 1.2, True, petal=T['sun'], core='#FFFFFF', ring=T['frame'])
+
+    _stages = {1: [4], 2: [2, 4], 3: [1, 3, 4], 4: [0, 2, 3, 4], 5: [0, 1, 2, 3, 4]}.get(len(_spots), [])
+    for i, st_ in zip(_spots, _stages):
+        _plant(_px[i], _py[i] - 2.5, st_)
+
+    # a few grass tufts in the valleys
+    _val = []                              # the gaps between bars already read as quiet; no grass needed
+    c.setStrokeColor(LEAF); c.setLineWidth(1.3); c.setLineCap(1)
+    for i in _val[::2][:5]:
+        gx_, gy_ = _px[i], _py[i] - 3
+        c.line(gx_ - 3, gy_, gx_ - 6, gy_ + 6); c.line(gx_, gy_, gx_, gy_ + 7.5); c.line(gx_ + 3, gy_, gx_ + 6, gy_ + 6)
     c.setLineCap(0)
-    # two eighth notes for intonation
+
+    # the speech bubble where her voice begins, a little sound wave inside
+    _sx0 = max(X0 + 10, min(_px[_lead] - 6, X0 + 90)); _sy0 = _py[_lead] + 14
+    _bw, _bh = 42, 24
+    c.setFillColor(CARD); c.setStrokeColor(HexColor(T['frame'])); c.setLineWidth(1.4); c.setLineJoin(1)
+    _tp = c.beginPath(); _tp.moveTo(_sx0 + 9, _sy0 + 4); _tp.lineTo(_sx0 + 6, _sy0 - 8); _tp.lineTo(_sx0 + 20, _sy0 + 2); _tp.close()
+    c.drawPath(_tp, stroke=1, fill=1)
+    c.roundRect(_sx0, _sy0, _bw, _bh, 9, stroke=1, fill=1)
+    c.setLineJoin(0)
+    c.setStrokeColor(CARD); c.setLineWidth(2.2)
+    c.line(_sx0 + 8, _sy0 + 2.6, _sx0 + 19, _sy0 + 2.6)                # erase the tail's seam inside the bubble
     c.setFillColor(HexColor(T['quote']))
-    for _nx, _ny in ((332, 70), (356, 76)):
-        c.saveState(); c.translate(_nx, _ny); c.rotate(-20)
-        c.ellipse(-5.2, -3.4, 5.2, 3.4, stroke=0, fill=1); c.restoreState()
-        c.rect(_nx + 3.4, _ny, 2.2, 82.6 - _ny, stroke=0, fill=1)        # stems meet the beam
-    c.rect(331.5, 78, 27, 4.6, stroke=0, fill=1)                        # the beam
-    # a star and a sparkle
-    def star(cx, cy, r, fill, stroke):
-        _p = c.beginPath()
-        for _i in range(10):
-            _a = math.radians(90 + _i * 36)
-            _rr = r if _i % 2 == 0 else r * 0.45
-            _x, _y = cx + _rr * math.cos(_a), cy + _rr * math.sin(_a)
-            _p.moveTo(_x, _y) if _i == 0 else _p.lineTo(_x, _y)
-        _p.close()
-        c.setFillColor(HexColor(fill)); c.setStrokeColor(HexColor(stroke)); c.setLineWidth(1.1)
-        c.drawPath(_p, stroke=1, fill=1)
-    star(420, 84, 9, '#FFC93C', '#E8930C')
-    sparkle_r(443, 76, 3.4, HexColor('#E8930C'))
-    # the two score flowers, same glyph as the ones in the readings
-    c.setStrokeColor(HexColor(T['leaf'])); c.setLineWidth(1.5)
-    c.line(72, 62, 72, 72); c.line(540, 58, 540, 68)
-    flower1(72, 77, 0.8, True); flower1(540, 73, 0.8, True)
+    for k_, hh in enumerate((5, 10, 14, 8, 11, 5)):
+        c.roundRect(_sx0 + 7.5 + k_ * 5, _sy0 + _bh / 2 - hh / 2, 2.6, hh, 1.3, stroke=0, fill=1)
 
     # the yellow board frame — everything is pinned inside it. Its outer edge sits 14pt (5 mm)
     # in from the paper edge, inside what an office or home printer can actually print.
@@ -616,6 +710,11 @@ def render(d):
         yy = oy0 - 21
         for ln in d.get('overview') or []:
             lead = lead_of(ln)
+            if CAP is not None:
+                runs = ([(lead, 'SCB', False), (ln[len(lead):], 'SCS', False)] if lead and ln.startswith(lead) else [(ln, 'SCS', False)])
+                CAP.append(dict(t='para', x=ox, y=yy, runs=runs, size=10, color='141414', maxw=OVER_W, leading=14, rot=0))
+                yy -= len(wrap(ln, 'SCS', 10, OVER_W)) * 14 + 4
+                continue
             for j, row in enumerate(wrap(ln, 'SCS', 10, OVER_W)):
                 if j == 0 and lead and row.startswith(lead):
                     text(ox, yy, lead, 'SCB', 10, INK)
@@ -632,16 +731,25 @@ def render(d):
         text(COLX[col], iy - 19, sub, 'SCS', 9, GREY)
     gy = iy - 36
     tch = d.get('teacher')
+    # spacing steps down only as far as the page needs: (gap name->reading, leading, gap between rows)
+    _rows = [max(len(wrap(x[3], 'SCS', 9.5, DESC_W)) for x in (d['dims'][r], d['dims'][r + 3])) for r in range(3)]
+    _below = 34 + 62 + 24 * len(d['games'])          # 接下来怎么做 + the games, measured as drawn below
+    for RT, RL, RG in ((17, 14, 16), (16, 13.5, 14), (15, 13, 12), (14, 12.5, 10)):
+        if gy - sum(RT + n_ * RL + RG for n_ in _rows) - _below >= 96: break
     for row in range(3):                 # each row as tall as its longer reading
         pair = (d['dims'][row], d['dims'][row + 3])
         rows_used = max(len(wrap(x[3], 'SCS', 9.5, DESC_W)) for x in pair)
+        # one line per dimension: name + stamp on the left, the five flowers (smaller) closing on the
+        # column's right edge, so every row shares one left edge and one right edge; the reading sits
+        # 17pt below in a softer ink with 14pt leading — air inside a cell, less between cells; on a full
+        # page the spacing steps down (16/13.5/14 … 14/12.5/10) before anything overflows
         for col, (nm, wd, n, desc) in enumerate(pair):
             gx = COLX[col]
             text(gx, gy, nm, 'SCB', 11, INK)
-            stamp(gx + sw(nm, 'SCB', 11) + 9, gy, wd, n, -1.5 if (row + col) % 2 == 0 else 1.5)
-            flowers(gx + 168, gy + 3, n, 0.72)
-            para(gx, gy - 14, desc, 'SCS', 9.5, INK, maxw=DESC_W, leading=12.5)
-        gy -= 14 + rows_used * 12.5 + 20
+            stamp(gx + sw(nm, 'SCB', 11) + 8, gy, wd, n, -1.5 if (row + col) % 2 == 0 else 1.5)
+            flowers(gx + DESC_W - 5 * 19 * 0.64, gy + 3.4, n, 0.64)
+            para(gx, gy - RT, desc, 'SCS', 9.5, HexColor('#3A3F46'), maxw=DESC_W, leading=RL)
+        gy -= RT + rows_used * RL + RG
 
     # ---------- 4. what to do next ----------
     ny = gy - 34
@@ -654,9 +762,18 @@ def render(d):
     # baseline sits 0.35em BELOW the chip's centre: PDF text hangs on its baseline,
     # and CJK ink lives almost entirely above it — centre the ink, not the baseline
     text(M, ny - 26, '小目标', 'SCB', 11, RED)
-    text(M + 65, ny - 26, d['goal'], 'SCS', 10.5, INK)
     _marks = [w_.lower() for w_ in d.get('mark', [])]
-    for m_ in re.finditer(r"[A-Za-z']+", d['goal']):      # the words to practise, dashed red
+    if CAP is not None:
+        runs, pos = [], 0
+        for m_ in re.finditer(r"[A-Za-z']+", d['goal']):
+            if m_.group().lower() in _marks:
+                runs += [(d['goal'][pos:m_.start()], 'SCS', False), (m_.group(), 'SCS', True)]; pos = m_.end()
+        runs.append((d['goal'][pos:], 'SCS', False))
+        CAP.append(dict(t='para', x=M + 65, y=ny - 26, runs=[r for r in runs if r[0]], size=10.5, color='141414',
+                        maxw=_gw + 30, leading=14, rot=0, nowrap=True))
+    else:
+        text(M + 65, ny - 26, d['goal'], 'SCS', 10.5, INK)
+    for m_ in (re.finditer(r"[A-Za-z']+", d['goal']) if CAP is None else ()):      # the words to practise, dashed red
         if m_.group().lower() in _marks:
             ux = M + 65 + sw(d['goal'][:m_.start()], 'SCS', 10.5)
             c.setStrokeColor(RED); c.setLineWidth(1.2); c.setDash(2.6, 1.8)
@@ -682,6 +799,15 @@ def render(d):
     c.roundRect(W / 2 - _fw / 2, 19, _fw, 15, 7.5, stroke=0, fill=1); c.setFillAlpha(1)
     textC(W / 2, 23.5, _fr, 'SCS', 8, INK)
     c.showPage(); c.save()
-    print('saved', d['out'])
+    if CAP is None: print('saved', d['out'])
 
-render(load_case(CASE_FILE))
+case_ = load_case(CASE_FILE)
+render(case_)
+# the editable companion: same page, illustrations as one picture, every piece of text a real text box
+if '--no-pptx' not in sys.argv:
+    try:
+        import export_pptx
+    except ImportError as e:
+        print(f'（未出 PPT 可编辑版：缺 {e.name}，pip install python-pptx pymupdf）')
+    else:
+        export_pptx.build(case_, render, os.path.join(CASE, os.path.splitext(case_['out'])[0] + '.pptx'), wrap)

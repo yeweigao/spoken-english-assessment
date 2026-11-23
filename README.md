@@ -12,11 +12,12 @@
 ## 快速开始
 
 ```bash
-pip install reportlab pypdf numpy pillow fonttools jieba
-python3 scripts/download_fonts.py          # 字体不随仓库分发，首次使用先下载（开源字体，OFL）
+pip install reportlab pypdf numpy pillow fonttools jieba python-pptx pymupdf
 # 每个孩子一个案例目录（cases/<名字>-<日期>/），以下都在案例目录里运行；脚本不改，内容写 case.json
 ffmpeg -i input.mp4 -vn -c:a copy audio.m4a        # 听评档：抽音轨交给模型听
-python3 scripts/build_simple.py             # 简版一页 report-simple.pdf（theme + teacher 都写在 case.json）
+python3 scripts/build_simple.py             # 简版一页 report-simple.pdf + 可编辑版 report-simple.pptx（theme + teacher + audio 都写在 case.json）
+#   case.json 写 "audio": "audio.m4a"：缺 audio_data.json 时本机自动取响度包络，画底部的"声音山"（不上云、不印数字）
+python3 scripts/install_fonts.py            # 老师电脑上装一次报告字体（字体先 download_fonts.py 取，或分发 zip 时附带；免管理员），PPT 才和 PDF 一个样
 ```
 
 实测档（需要可复现的测量值或详细版两页时才装）：
@@ -39,4 +40,6 @@ python3 scripts/build_front.py && python3 scripts/build_back.py && python3 scrip
 - `SKILL.md` / `skill.yaml` — 技能规程（可直接作为 Muse skill 安装到 `~/workspace/custom-skills/` 或 `~/.claude/skills/` 类目录）
 - `scripts/` — 抽帧选图、识别、声学分析、声音评分、简版与正/背面生成、合并、字体下载、内部依据文件
 - `references/` — 六维量规、对外表述边界（内部）、文字与版式体系
-- `assets/fonts/` — 字体目录（由 download_fonts.py 填充，.gitignore 已排除）
+- `assets/fonts/` — 报告字体**不入 git**（约 22 MB）：跑 `download_fonts.py` 从 Google Fonts 取并实例化静态字重（思源黑体、站酷快乐体、Inter、Patrick Hand，均为 SIL OFL，许可文本 `OFL-*.txt` 已入库）。打包 zip 分发 skill 时把该目录一并放进去，再用 `install_fonts.py` 装到老师电脑。
+
+  手动下载：Noto Sans SC https://fonts.google.com/noto/specimen/Noto+Sans+SC · ZCOOL KuaiLe https://fonts.google.com/specimen/ZCOOL+KuaiLe · Inter https://fonts.google.com/specimen/Inter · Patrick Hand https://fonts.google.com/specimen/Patrick+Hand
