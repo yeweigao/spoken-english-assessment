@@ -64,27 +64,27 @@ THEMES = {
     'cream': dict(label='奶油黄', field='#FFF9EA', sun='#FFD65A', frame='#FFC93C',
                   tape='#FFE9A8', chip_shadow='#E7ECF1', chip_line='#EFE9DC',
                   box_shadow='#E4E9EF', box_fill='#FFFDF5', box_line='#F0EAD8',
-                  radar_fill='#F09A2E', radar_line='#ED8F24', quote='#DFA32A'),
+                  radar_fill='#F09A2E', radar_line='#ED8F24', quote='#DFA32A', hill1='#E3F0DB', hill2='#CDE6BE', bush='#A9D18E', leaf='#7CB342', trunk='#8D6E63'),
     'mint': dict(label='薄荷绿', field='#E7F7EE', sun='#7FD2AB', frame='#5FB78D',
                  tape='#CDEDDF', chip_shadow='#E2EFE9', chip_line='#D7EADF',
                  box_shadow='#E1EFE8', box_fill='#FBFFFC', box_line='#DAEDE4',
-                 radar_fill='#3E9E7A', radar_line='#2F8767', quote='#4E9A7D'),
+                 radar_fill='#3E9E7A', radar_line='#2F8767', quote='#4E9A7D', hill1='#DFF2E8', hill2='#C7E7D7', bush='#A3D6BE', leaf='#62BB92', trunk='#8C7B6C'),
     'sakura': dict(label='樱花粉', field='#FFEEF2', sun='#FFA4BC', frame='#EE8FA8',
                    tape='#FFD9E2', chip_shadow='#F5E6EA', chip_line='#F4DEE4',
                    box_shadow='#F5E6EA', box_fill='#FFFCFD', box_line='#F6E2E8',
-                   radar_fill='#D4698A', radar_line='#C15578', quote='#D0738F'),
+                   radar_fill='#D4698A', radar_line='#C15578', quote='#D0738F', hill1='#FDEBF0', hill2='#F9D7E2', bush='#F4BFD0', leaf='#EE8FA8', trunk='#B0897C'),
     'sky': dict(label='云朵蓝', field='#EAF5FD', sun='#93CBEA', frame='#6FB6DE',
                 tape='#CFE9F7', chip_shadow='#E5EFF5', chip_line='#DAE9F2',
                 box_shadow='#E4EEF4', box_fill='#FCFFFF', box_line='#DCECF4',
-                radar_fill='#3D8FC0', radar_line='#2F7BA9', quote='#4C90B8'),
+                radar_fill='#3D8FC0', radar_line='#2F7BA9', quote='#4C90B8', hill1='#E4F2FA', hill2='#CDE7F4', bush='#A8D5E9', leaf='#6FB6DE', trunk='#8C7B6C'),
     'lilac': dict(label='薰衣草', field='#F1ECFA', sun='#C3A9E6', frame='#A88CD8',
                   tape='#E3D8F6', chip_shadow='#EAE6F1', chip_line='#E3DCF0',
                   box_shadow='#EAE6F1', box_fill='#FEFDFF', box_line='#E6DFF1',
-                  radar_fill='#7A5BB5', radar_line='#684CA1', quote='#7E63B0'),
+                  radar_fill='#7A5BB5', radar_line='#684CA1', quote='#7E63B0', hill1='#F0EAF9', hill2='#E0D6F1', bush='#CBB9E7', leaf='#A88CD8', trunk='#9A8578'),
     'peach': dict(label='蜜桃橙', field='#FFF0E6', sun='#FFB68F', frame='#F79B6C',
                   tape='#FFDCC8', chip_shadow='#F5E8E0', chip_line='#F6E0D4',
                   box_shadow='#F5E8E0', box_fill='#FFFCFA', box_line='#F7E3D9',
-                  radar_fill='#DD7742', radar_line='#C9652F', quote='#D2743C'),
+                  radar_fill='#DD7742', radar_line='#C9652F', quote='#D2743C', hill1='#FDEDE1', hill2='#F8D8C3', bush='#F5C2A4', leaf='#F49A6F', trunk='#A8785C'),
 }
 
 def sw(t, f, s): return pdfmetrics.stringWidth(t, f, s)
@@ -199,8 +199,11 @@ def load_case(path):
 
 M = 48; CW = W - 2 * M
 E = 18                       # inner edge of the board frame: kept inside a home printer's printable area
-OVER_X = M + 268             # overview column
+OVER_X = M + 268             # overview / teacher's-note column
 OVER_W = W - M - OVER_X
+NOTE_X = OVER_X + 4          # the sticky note sits a hair inside the column
+NOTE_W = W - M - NOTE_X - 6
+NOTE_LEAD = 13
 COLX = (M, M + 272)          # readings: content dimensions left, sound dimensions right
 DESC_W = 222
 MEASURE = re.compile(r'\d+(\.\d+)?\s*(秒|个词|个半音|半音|音节|次|个|%|dB|分贝|Hz)')
@@ -230,12 +233,14 @@ def validate(d):
     if tch:
         if not str(tch.get('comment') or '').strip():
             raise ValueError('teacher 要么整段不写，要么写 comment（老师评语原文）；没有真实评语就删掉 teacher')
-        if len(wrap(str(tch['comment']), 'SCS', 10, CW - 40)) > 3:
-            raise ValueError('老师评语不超过三行，请精简')
+        if note_height(d) > 150:
+            raise ValueError('老师评语放进便利贴超过六行，请精简到四五句')
+    elif not (2 <= len(d.get('overview') or []) <= 4):
+        raise ValueError('没有 teacher 时必须写 overview 2–4 条（有老师评语时右栏被评语占用，overview 可省略）')
     if d.get('task') == 'read' and not d.get('original'):
         raise ValueError('朗读案例必须写 original（课文原文）：读错的词只有对着原文才查得出')
-    ov = d['overview']
-    if not 2 <= len(ov) <= 4:
+    ov = d.get('overview') or []
+    if ov and not 2 <= len(ov) <= 4:
         raise ValueError('overview 写 2–4 条：讲了什么 / 最棒的 / 说得怎么样 / 要加油的')
     for k, line in enumerate(ov):
         if len(wrap(line, 'SCS', 10, OVER_W)) > 2:
@@ -267,16 +272,37 @@ def validate(d):
 PHOTO_W, PHOTO_H = 96, 112
 PHOTO_X, PHOTO_TOP = W - M - PHOTO_W + 4, H - 28
 
+def note_lines(d):
+    tch = d.get('teacher')
+    if not tch:
+        return []
+    return wrap(str(tch['comment']), 'SCS', 9.5, NOTE_W - 48)
+
+def note_height(d):
+    """Height of the sticky note: label + comment lines + signature."""
+    lines = note_lines(d)
+    if not lines:
+        return 0
+    sign = (d['teacher'].get('sign') or '').strip()
+    return 12 + 22 + len(lines) * NOTE_LEAD + (15 if sign else 4) + 10
+
+def right_bottom(d, oy0):
+    """Bottom edge of whatever stands in the column right of the radar."""
+    if d.get('teacher'):
+        return oy0 - note_height(d) - 12
+    yy = oy0 - 21
+    for ln in d.get('overview') or []:
+        yy -= 14 * len(wrap(ln, 'SCS', 10, OVER_W)) + 4
+    return yy
+
 def top_layout(d):
-    """Where the top half ends, computed from content — the cream field, the overview and the
+    """Where the top half ends, computed from content — the cream field, the right column and the
     readings heading all follow it, so nothing is pinned to a hand-set y."""
     hy = H - 110                                   # 六个维度 heading
     cy0 = hy - 110                                 # radar centre
     photo_bottom = PHOTO_TOP - PHOTO_H - 8
-    oy0 = min(hy - 24, photo_bottom - 22)          # 总览 title: below the photo print
-    yy = oy0 - 21
-    for ln in d['overview']:
-        yy -= 14 * len(wrap(ln, 'SCS', 10, OVER_W)) + 4
+    oy0 = min(hy - 24, photo_bottom - 22)          # right column starts below the photo print
+    yy = right_bottom(d, oy0)
     iy = min(cy0 - 128, yy - 40)                   # 逐项解读 heading
     return dict(hy=hy, cy0=cy0, oy0=oy0, iy=iy, field_bottom=iy + 30)
 
@@ -330,21 +356,21 @@ def render(d):
         c.setFillColor(CARD); c.setFillAlpha(0.8)
         c.ellipse(-r * 0.34, -r * 0.15, r * 0.34, r * 0.15, stroke=0, fill=1)
         c.setFillAlpha(1); c.restoreState()
-    def flower1(cx, cy, s=0.8, filled=True):
+    def flower1(cx, cy, s=0.8, filled=True, petal='#F0563F', core='#FFC93C', ring='#E8930C'):
         for a in range(6):
             deg = 90 + a * 60
             ang = math.radians(deg)
             px, py = cx + 3.0 * s * math.cos(ang), cy + 3.0 * s * math.sin(ang)
             c.saveState(); c.translate(px, py); c.rotate(deg)
             if filled:
-                c.setFillColor(HexColor('#F0563F')); c.ellipse(-2.8 * s, -1.75 * s, 2.8 * s, 1.75 * s, stroke=0, fill=1)
+                c.setFillColor(HexColor(petal)); c.ellipse(-2.8 * s, -1.75 * s, 2.8 * s, 1.75 * s, stroke=0, fill=1)
             else:
                 c.setStrokeColor(FAINT); c.setLineWidth(0.8); c.setDash(2.2, 1.8)
                 c.ellipse(-2.8 * s, -1.75 * s, 2.8 * s, 1.75 * s, stroke=1, fill=0); c.setDash()
             c.restoreState()
         if filled:
-            c.setFillColor(HexColor('#FFC93C')); c.circle(cx, cy, 1.85 * s, stroke=0, fill=1)
-            c.setStrokeColor(HexColor('#E8930C')); c.setLineWidth(0.6 * s); c.circle(cx, cy, 1.85 * s, stroke=1, fill=0)
+            c.setFillColor(HexColor(core)); c.circle(cx, cy, 1.85 * s, stroke=0, fill=1)
+            c.setStrokeColor(HexColor(ring)); c.setLineWidth(0.6 * s); c.circle(cx, cy, 1.85 * s, stroke=1, fill=0)
         else:
             c.setFillColor(HexColor('#EDF1F5')); c.circle(cx, cy, 1.85 * s, stroke=0, fill=1)
     def flowers(x, cy, n, s=0.8):
@@ -372,6 +398,30 @@ def render(d):
     def head(y, t):
         text(M, y, t, DISP, 15.5, INK)
         return y
+
+    def draw_note(top):
+        """The teacher's note as a sticky note in the column beside the radar:
+        a strip of tape, a pale card, one big opening quote, and a signature."""
+        lines = note_lines(d)
+        sign = (d['teacher'].get('sign') or '').strip()
+        h = note_height(d)
+        cx, cy = NOTE_X + NOTE_W / 2, top - h / 2
+        c.saveState(); c.translate(cx, cy); c.rotate(-1.3)
+        x0, ty0 = -NOTE_W / 2, h / 2
+        c.setFillColor(HexColor('#000000')); c.setFillAlpha(0.08)
+        c.roundRect(x0 + 3, -h / 2 - 4, NOTE_W, h, 6, stroke=0, fill=1); c.setFillAlpha(1)
+        c.setFillColor(HexColor(T['field'])); c.roundRect(x0, -h / 2, NOTE_W, h, 6, stroke=0, fill=1)
+        c.setStrokeColor(HexColor(T['chip_line'])); c.setLineWidth(0.9)
+        c.roundRect(x0, -h / 2, NOTE_W, h, 6, stroke=1, fill=0)
+        text(x0 + 16, ty0 - 17, '老师说', DISP, 12, HexColor(T['quote']))
+        text(x0 + 14, ty0 - 41, '“', DISP, 23, HexColor(T['quote']))
+        yy = ty0 - 39
+        for ln in lines:
+            text(x0 + 30, yy, ln, 'SCS', 9.5, INK); yy -= NOTE_LEAD
+        if sign:
+            text(x0 + NOTE_W - 16 - sw(sign, 'SCS', 8.5), -h / 2 + 10, sign, 'SCS', 8.5, GREY)
+        c.restoreState()
+        tape(cx, top - 2, 46, 12, -2)
 
     # ===== one cream field over the whole top; its bottom edge is a soft wave,
     # with two clouds sitting on the seam — the divider is drawn, not ruled =====
@@ -413,43 +463,45 @@ def render(d):
     c.circle(_sx, _sy, SUN_R, stroke=0, fill=1)
     # a proper little landscape along the bottom: two soft hill layers,
     # trees, bushes, grass and two tiny flowers — drawn, not a lone line
-    _bp2 = c.beginPath(); _bp2.moveTo(E, 66)
-    for _x0, _y0, _x1, _y1 in [(E, 66, 150, 58), (150, 58, 300, 64), (300, 64, 450, 57), (450, 57, W - E, 62)]:
+    _bp2 = c.beginPath(); _bp2.moveTo(E, 104)
+    for _x0, _y0, _x1, _y1 in [(E, 104, 150, 94), (150, 94, 300, 102), (300, 102, 450, 93), (450, 93, W - E, 99)]:
         _bp2.curveTo(_x0 + (_x1 - _x0) * 0.5, _y0, _x1 - (_x1 - _x0) * 0.5, _y1, _x1, _y1)
     _bp2.lineTo(W - E, E); _bp2.lineTo(E, E); _bp2.close()
-    c.setFillColor(HexColor('#E3F0DB')); c.drawPath(_bp2, stroke=0, fill=1)
-    _fp2 = c.beginPath(); _fp2.moveTo(E, 42)
-    for _x0, _y0, _x1, _y1 in [(E, 42, 160, 35), (160, 35, 320, 41), (320, 41, 460, 34), (460, 34, W - E, 39)]:
+    c.setFillColor(HexColor(T['hill1'])); c.drawPath(_bp2, stroke=0, fill=1)
+    _fp2 = c.beginPath(); _fp2.moveTo(E, 74)
+    for _x0, _y0, _x1, _y1 in [(E, 74, 160, 66), (160, 66, 320, 73), (320, 73, 460, 65), (460, 65, W - E, 70)]:
         _fp2.curveTo(_x0 + (_x1 - _x0) * 0.5, _y0, _x1 - (_x1 - _x0) * 0.5, _y1, _x1, _y1)
     _fp2.lineTo(W - E, E); _fp2.lineTo(E, E); _fp2.close()
-    c.setFillColor(HexColor('#CDE6BE')); c.drawPath(_fp2, stroke=0, fill=1)
+    c.setFillColor(HexColor(T['hill2'])); c.drawPath(_fp2, stroke=0, fill=1)
     # bushes
-    c.setFillColor(HexColor('#A9D18E'))
-    c.ellipse(196, 32, 232, 44, stroke=0, fill=1); c.ellipse(336, 30, 366, 41, stroke=0, fill=1); c.ellipse(52, 44, 76, 53, stroke=0, fill=1)
+    c.setFillColor(HexColor(T['bush']))
+    for _b0, _b1 in ((186, 232), (328, 366), (44, 74)):
+        c.ellipse(_b0, 60, _b1, 80, stroke=0, fill=1)
+        c.ellipse(_b0 + 8, 70, _b1 - 8, 87, stroke=0, fill=1)
     # the big tree, right
-    c.setFillColor(HexColor('#8D6E63')); c.rect(502, 34, 5, 17, stroke=0, fill=1)
-    c.setFillColor(HexColor('#7CB342'))
-    c.circle(504, 62, 13, stroke=0, fill=1); c.circle(494, 52, 9, stroke=0, fill=1); c.circle(515, 53, 10, stroke=0, fill=1)
-    c.setFillColor(HexColor('#F0563F')); c.circle(498, 60, 2.1, stroke=0, fill=1); c.circle(511, 66, 2.1, stroke=0, fill=1)
+    c.setFillColor(HexColor(T['trunk'])); c.rect(502, 66, 6, 26, stroke=0, fill=1)
+    c.setFillColor(HexColor(T['leaf']))
+    c.circle(505, 102, 18, stroke=0, fill=1); c.circle(491, 88, 12, stroke=0, fill=1); c.circle(519, 89, 13, stroke=0, fill=1)
+    c.setFillColor(HexColor('#F0563F')); c.circle(497, 99, 2.7, stroke=0, fill=1); c.circle(514, 108, 2.7, stroke=0, fill=1); c.circle(506, 88, 2.4, stroke=0, fill=1)
     # a small tree, left
-    c.setFillColor(HexColor('#8D6E63')); c.rect(118, 40, 4, 12, stroke=0, fill=1)
-    c.setFillColor(HexColor('#7CB342'))
-    c.circle(120, 60, 9, stroke=0, fill=1); c.circle(113, 53, 6.5, stroke=0, fill=1); c.circle(127, 54, 7, stroke=0, fill=1)
+    c.setFillColor(HexColor(T['trunk'])); c.rect(118, 72, 5, 18, stroke=0, fill=1)
+    c.setFillColor(HexColor(T['leaf']))
+    c.circle(120, 100, 13, stroke=0, fill=1); c.circle(110, 90, 9, stroke=0, fill=1); c.circle(130, 91, 9.5, stroke=0, fill=1)
     # grass tufts along the crests
-    c.setStrokeColor(HexColor('#7CB342')); c.setLineWidth(1.4)
-    for gx2, gy2 in [(160, 38), (268, 34), (404, 32), (452, 30), (556, 36), (70, 46)]:
-        c.line(gx2, gy2, gx2 - 3, gy2 + 7); c.line(gx2 + 4, gy2, gx2 + 4, gy2 + 8); c.line(gx2 + 8, gy2, gx2 + 11, gy2 + 7)
+    c.setStrokeColor(HexColor(T['leaf'])); c.setLineWidth(1.5)
+    for gx2, gy2 in [(160, 78), (268, 70), (404, 66), (452, 62), (356, 84), (70, 86)]:
+        c.line(gx2, gy2, gx2 - 4, gy2 + 10); c.line(gx2 + 5, gy2, gx2 + 5, gy2 + 11); c.line(gx2 + 10, gy2, gx2 + 14, gy2 + 10)
     # two tiny flowers on stems, same glyph as the score flowers
-    c.setStrokeColor(HexColor('#7CB342')); c.setLineWidth(1.4)
-    c.line(168, 36, 168, 46); c.line(430, 33, 430, 43)
-    _tiny_flowers = [(168, 50), (430, 47)]
+    c.setStrokeColor(HexColor(T['leaf'])); c.setLineWidth(1.5)
+    c.line(168, 74, 168, 90); c.line(430, 70, 430, 86)
+    _tiny_flowers = [(168, 95), (430, 91)]
 
     # the yellow board frame — everything is pinned inside it. Its outer edge sits 14pt (5 mm)
     # in from the paper edge, inside what an office or home printer can actually print.
     c.setStrokeColor(HexColor(T['frame'])); c.setLineWidth(8); c.rect(E - 4, E - 4, W - 2 * E + 8, H - 2 * E + 8, stroke=1, fill=0)
 
     for _fx, _fy in _tiny_flowers:
-        flower1(_fx, _fy, 0.52, True)
+        flower1(_fx, _fy, 0.8, True)
     # ---------- 1. header: identity + overall ----------
     text(M, H - 46, '英语口语测评报告', DISP, 25, INK)
     text(M, H - 68, f"姓名 {d['name']} · 课题 {d['topic']} · 录音 {d['secs']} · {d['date']}", 'SCS', 10.5, INK)
@@ -504,21 +556,24 @@ def render(d):
         elif k == 3: textC(lx, ly - 12, nm, 'SCB', 10.5, INK)
         elif k in (1, 2): text(lx, ly - 3.5, nm, 'SCB', 10.5, INK)
         else: text(lx - sw(nm, 'SCB', 10.5), ly - 3.5, nm, 'SCB', 10.5, INK)
-    # overview beside the chart
+    # right of the chart: the teacher's note when a real one exists, 总览 only when it doesn't
     ox = OVER_X
     oy0 = L['oy0']
-    text(ox, oy0, '总览', 'SCB', 11, INK)
-    yy = oy0 - 21
-    for ln in d['overview']:
-        lead = lead_of(ln)
-        for j, row in enumerate(wrap(ln, 'SCS', 10, OVER_W)):
-            if j == 0 and lead and row.startswith(lead):
-                text(ox, yy, lead, 'SCB', 10, INK)
-                text(ox + sw(lead, 'SCB', 10), yy, row[len(lead):], 'SCS', 10, INK)
-            else:
-                text(ox, yy, row, 'SCS', 10, INK)
-            yy -= 14
-        yy -= 4
+    if d.get('teacher'):
+        draw_note(oy0)
+    else:
+        text(ox, oy0, '总览', 'SCB', 11, INK)
+        yy = oy0 - 21
+        for ln in d.get('overview') or []:
+            lead = lead_of(ln)
+            for j, row in enumerate(wrap(ln, 'SCS', 10, OVER_W)):
+                if j == 0 and lead and row.startswith(lead):
+                    text(ox, yy, lead, 'SCB', 10, INK)
+                    text(ox + sw(lead, 'SCB', 10), yy, row[len(lead):], 'SCS', 10, INK)
+                else:
+                    text(ox, yy, row, 'SCS', 10, INK)
+                yy -= 14
+            yy -= 4
 
     # ---------- 3. interpretation, dimension by dimension ----------
     iy = L['iy']
@@ -536,36 +591,10 @@ def render(d):
             text(gx + sw(nm, 'SCB', 11) + 8, gy, wd, 'SCS', 10, INK)
             flowers(gx + 168, gy + 3, n, 0.72)
             para(gx, gy - 14, desc, 'SCS', 9.5, INK, maxw=DESC_W, leading=12.5)
-        gy -= 14 + rows_used * 12.5 + (8 if tch else 11)
-
-    # ---------- 3b. the teacher's note — a human voice between evidence and action.
-    # Only a real comment gets this band; without one the whole block does not exist.
-    if tch:
-        lbl = '老师说'
-        lw = sw(lbl, DISP, 11.5)
-        tx = M + 16 + lw + 20
-        tlines = wrap(str(tch['comment']), 'SCS', 10, M + CW - 18 - tx)
-        sign = (tch.get('sign') or '').strip()
-        top = gy - 5
-        first = top - 21
-        last = first - 13 * (len(tlines) - 1)
-        inline = bool(sign) and (M + CW - 18 - (tx + sw(tlines[-1], 'SCS', 10)) > sw(sign, 'SCS', 9) + 14)
-        bot = last - (0 if (not sign or inline) else 13) - 6
-        c.setFillColor(HexColor(T['field'])); c.roundRect(M, bot, CW, top - bot, 9, stroke=0, fill=1)
-        c.setStrokeColor(HexColor(T['chip_line'])); c.setLineWidth(0.9)
-        c.roundRect(M, bot, CW, top - bot, 9, stroke=1, fill=0)
-        text(M + 16, first, lbl, DISP, 11.5, HexColor(T['quote']))
-        text(tx - 13, first + 1, '“', DISP, 14, HexColor(T['quote']))
-        yy = first
-        for ln in tlines:
-            text(tx, yy, ln, 'SCS', 10, INK); yy -= 13
-        if sign:
-            sy = last if inline else bot + 8
-            text(M + CW - 18 - sw(sign, 'SCS', 9), sy, sign, 'SCS', 9, GREY)
-        gy = bot
+        gy -= 14 + rows_used * 12.5 + 20
 
     # ---------- 4. what to do next ----------
-    ny = gy - (30 if tch else 10)
+    ny = gy - 34
     head(ny, '接下来怎么做')
     _gw = sw(d['goal'], 'SCS', 10.5)
     c.setFillColor(HexColor(T['chip_shadow'])); c.rect(M + 59, ny - 36, _gw + 18, 21, stroke=0, fill=1)
@@ -576,62 +605,26 @@ def render(d):
     # and CJK ink lives almost entirely above it — centre the ink, not the baseline
     text(M, ny - 26, '小目标', 'SCB', 11, RED)
     text(M + 65, ny - 26, d['goal'], 'SCS', 10.5, INK)
-    gy = ny - 56
+    _marks = [w_.lower() for w_ in d.get('mark', [])]
+    for m_ in re.finditer(r"[A-Za-z']+", d['goal']):      # the words to practise, dashed red
+        if m_.group().lower() in _marks:
+            ux = M + 65 + sw(d['goal'][:m_.start()], 'SCS', 10.5)
+            c.setStrokeColor(RED); c.setLineWidth(1.2); c.setDash(2.6, 1.8)
+            c.line(ux, ny - 28.6, ux + sw(m_.group(), 'SCS', 10.5), ny - 28.6); c.setDash()
+    gy = ny - 62
     text(M, gy, '在家练', 'SCB', 11, INK)
     for j, (gn, gd) in enumerate(d['games']):
         bx = M + 64                      # three games, no order between them: a box to tick, not a rank
         c.setStrokeColor(INK); c.setLineWidth(1.1); c.roundRect(bx, gy - 1.5, 11, 11, 2.5, stroke=1, fill=0)
         text(bx + 20, gy, gn, 'SCB', 10.5, INK)
         para(M + 168, gy, gd, 'SCS', 10, INK, maxw=CW - 168, leading=13)
-        gy -= 18
+        gy -= 24
 
-    # ---------- 5. appendix: the transcript ----------
-    ay = gy - 16
-    # the transcript is the child's whole speech: it is never trimmed — it steps down 9.5 -> 8 pt to fit,
-    # with leading kept at 1.45x so the practice-word underline never touches the next line
-    for tfs, lf in ((9.5, 1.45), (9, 1.45), (8.5, 1.45), (8, 1.45), (8, 1.36)):
-        tld = round(tfs * lf, 1)
-        lines = wrap(d['script'], 'ENR', tfs, CW)
-        box_h = 31 + len(lines) * tld
-        box_bot = ay + 17 - box_h
-        if box_bot >= 74: break
-    else:
-        raise ValueError(f'内容超出版面 {74 - box_bot:.0f}pt：全文已缩到 8pt，请精简解读、游戏或老师评语')
-    c.setFillColor(HexColor(T['box_shadow'])); c.rect(M - 9, box_bot - 3, CW + 22, box_h, stroke=0, fill=1)
-    c.setFillColor(HexColor(T['box_fill'])); c.rect(M - 12, box_bot, CW + 22, box_h, stroke=0, fill=1)
-    c.setStrokeColor(HexColor(T['box_line'])); c.setLineWidth(0.8); c.rect(M - 12, box_bot, CW + 22, box_h, stroke=1, fill=0)
-    tape(W / 2, ay + 17, 40, 11, 2)
-    text(M, ay, f"附：{d['pro']}说的话（全文）", 'SCB', 10.5, GREY)
-    # the recording's length always sits at the box's right edge; the waveform strip only exists when
-    # the audio was actually measured (audio_data.json) — a listening-track page gets the label alone,
-    # never a decorative fake waveform
-    _ad = os.path.join(CASE, 'audio_data.json')
-    box_r = M - 12 + CW + 22                     # the box's right edge: label and strip stay inside it
-    lab_w = sw(d['secs'], 'SCS', 8.5)
-    lab_x = box_r - 12 - lab_w
-    if os.path.exists(_ad):
-        pk = json.load(open(_ad))['peaks']
-        wx0 = max(M + sw(f"附：{d['pro']}说的话（全文）", 'SCB', 10.5) + 24, box_r - 230)
-        ww = lab_x - 8 - wx0
-        n = max(24, int(ww / 3.05))
-        if ww > 30:
-            c.setStrokeColor(HexColor('#C2CCD6')); c.setLineWidth(1.8); c.setLineCap(1)
-            for i in range(n):
-                seg = pk[int(i * len(pk) / n): max(int((i + 1) * len(pk) / n), int(i * len(pk) / n) + 1)]
-                v = max(seg) if seg else 0
-                xx = wx0 + i * ww / (n - 1); h = 1 + v * 9
-                c.line(xx, ay + 3.5 - h / 2, xx, ay + 3.5 + h / 2)
-    text(lab_x, ay, d['secs'], 'SCS', 8.5, GREY)
-    marks = [w_.lower() for w_ in d.get('mark', [])]
-    yy = ay - 16
-    for ln in lines:
-        text(M, yy, ln, 'ENR', tfs, INK)
-        for m_ in re.finditer(r"[A-Za-z']+", ln):     # the practice words, same dashed red as the main report
-            if m_.group().lower() in marks:
-                ux = M + sw(ln[:m_.start()], 'ENR', tfs)
-                c.setStrokeColor(RED); c.setLineWidth(1.2); c.setDash(2.6, 1.8)
-                c.line(ux, yy - 2.4, ux + sw(m_.group(), 'ENR', tfs), yy - 2.4); c.setDash()
-        yy -= tld
+    # the page keeps only what a parent reads: shape, evidence, teacher's voice, actions.
+    # The full transcript stays in case.json as the record — it is not printed on this page.
+    if gy < 96:
+        raise ValueError(f'内容超出版面 {96 - gy:.0f}pt：请精简解读、游戏或老师评语')
+
     # footer on its own clean label, never across the drawn landscape
     _fr = '参照剑桥 Starters 与 IELTS 口语标准'
     _fw = sw(_fr, 'SCS', 8) + 20
