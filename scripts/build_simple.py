@@ -395,6 +395,18 @@ def render(d):
             stage_icon(2, cx, cy, on)
             _sc = HexColor('#FFC93C') if on else HexColor('#D5DCE4')
             sparkle_r(cx - 11, cy + 6, 3.4, _sc); sparkle_r(cx + 11, cy + 1, 2.6, _sc)
+    def stamp(x, ybase, wd, n, tilt=-1.5):
+        """Verdict word as a little stamp: white card, coloured edge and text by flower count
+        (green >= 4, amber 3, red below) — the same reading as the detailed page's stamps."""
+        scol = HexColor('#2E9E4F') if n >= 4 else (HexColor('#D9930D') if n == 3 else HexColor('#C73E1D'))
+        tw2 = sw(wd, 'SCB', 9) + 14
+        c.saveState(); c.translate(x + tw2 / 2, ybase + 3.6); c.rotate(tilt)
+        c.setFillColor(CARD); c.setStrokeColor(scol); c.setLineWidth(1.0)
+        c.roundRect(-tw2 / 2, -7.6, tw2, 15, 7.5, stroke=1, fill=1)
+        c.setFillColor(scol); c.setFont('SCB', 9); c.drawString(-tw2 / 2 + 7, -3.6, wd)
+        c.restoreState()
+        return tw2
+
     def head(y, t):
         text(M, y, t, DISP, 15.5, INK)
         return y
@@ -588,7 +600,7 @@ def render(d):
         for col, (nm, wd, n, desc) in enumerate(pair):
             gx = COLX[col]
             text(gx, gy, nm, 'SCB', 11, INK)
-            text(gx + sw(nm, 'SCB', 11) + 8, gy, wd, 'SCS', 10, INK)
+            stamp(gx + sw(nm, 'SCB', 11) + 9, gy, wd, n, -1.5 if (row + col) % 2 == 0 else 1.5)
             flowers(gx + 168, gy + 3, n, 0.72)
             para(gx, gy - 14, desc, 'SCS', 9.5, INK, maxw=DESC_W, leading=12.5)
         gy -= 14 + rows_used * 12.5 + 20
