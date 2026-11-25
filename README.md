@@ -43,3 +43,4 @@ python3 scripts/build_detail.py            # 详细版两页 report.pdf（案例
 - `assets/fonts/` — 报告字体**不入 git**（约 22 MB）：跑 `download_fonts.py` 从 Google Fonts 取并实例化静态字重（思源黑体、站酷快乐体、Inter、Patrick Hand，均为 SIL OFL，许可文本 `OFL-*.txt` 已入库）。打包 zip 分发 skill 时把该目录一并放进去，再用 `install_fonts.py` 装到老师电脑。
 
   手动下载：Noto Sans SC https://fonts.google.com/noto/specimen/Noto+Sans+SC · ZCOOL KuaiLe https://fonts.google.com/specimen/ZCOOL+KuaiLe · Inter https://fonts.google.com/specimen/Inter · Patrick Hand https://fonts.google.com/specimen/Patrick+Hand
+- `assets/brand/` — 页脚标志：`cieg-logo.png`（加拿大国际教育集团）、`kindergarten-logo.png`（默认幼儿园，可由 case.json 的 `school_logo` 换成各园自己的），均为透明底 PNG

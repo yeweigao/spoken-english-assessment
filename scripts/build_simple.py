@@ -90,7 +90,7 @@ THEMES = {
 }
 
 def sw(t, f, s): return pdfmetrics.stringWidth(t, f, s)
-CLOSE = '，。、；：！？）」』”’》〕…'
+CLOSE = '，。、；：！？）」』”’》〕…·'
 OPEN = '（「『“‘《〔'
 PUNCT = CLOSE + OPEN + ' '
 try:                                   # word boundaries for Chinese, so 「这样」「不慌不忙」 aren't cut in two
@@ -214,6 +214,9 @@ def load_case(path):
 
 M = 48; CW = W - 2 * M
 E = 18                       # inner edge of the board frame: kept inside a home printer's printable area
+FOOT_TOP = 72                # the fine-print band (logos + standards) runs from the frame up to here
+FLOOR = 116                  # content stops above this: the voice hill and its plants live below
+BRAND = os.path.normpath(os.path.join(BASE, '..', 'assets', 'brand'))
 OVER_X = M + 268             # overview / teacher's-note column
 OVER_W = W - M - OVER_X
 NOTE_X = OVER_X + 4          # the sticky note sits a hair inside the column
@@ -531,7 +534,7 @@ def render(d, capture=None, out=None):
     # direction the radar and the readings read: what she said is already growing. A speech
     # bubble with a sound wave in it sits where her voice begins. The plants bloom in the theme's
     # sun colour, never red: red stays reserved for earned flowers.
-    X0, X1, BASE, AMP, NPT = E, W - E, 51, 30, 92
+    X0, X1, BASE, AMP, NPT = E, W - E, 58, 25, 92
     _env = None
     _ad = os.path.join(CASE, 'audio_data.json')
     if os.path.isfile(_ad):
@@ -566,7 +569,7 @@ def render(d, capture=None, out=None):
     # the voice hill is drawn the way a recording is drawn: a row of rounded waveform bars, one per
     # slice of the recording, standing on a gently rolling ground so it still reads as a hill
     _soft = [sum(_env[max(0, i - 9):i + 10]) / len(_env[max(0, i - 9):i + 10]) for i in range(NPT)]
-    _gy = [BASE - 10 + 6 * math.sin(i / NPT * math.pi * 2.3 + 0.5) + 10 * v for i, v in enumerate(_soft)]
+    _gy = [max(FOOT_TOP + 1, BASE - 10 + 6 * math.sin(i / NPT * math.pi * 2.3 + 0.5) + 10 * v) for i, v in enumerate(_soft)]
     _py = [g + 3 + AMP * v ** 1.25 for g, v in zip(_gy, _env)]          # each bar rises from the ground by her loudness
     c.setFillColor(HexColor(T['hill2'])); c.drawPath(_smooth_path(_px, _gy, E), stroke=0, fill=1)
     _bw = (X1 - X0) / NPT * 0.68
@@ -735,7 +738,7 @@ def render(d, capture=None, out=None):
     _rows = [max(len(wrap(x[3], 'SCS', 9.5, DESC_W)) for x in (d['dims'][r], d['dims'][r + 3])) for r in range(3)]
     _below = 34 + 62 + 24 * len(d['games'])          # 接下来怎么做 + the games, measured as drawn below
     for RT, RL, RG in ((17, 14, 16), (16, 13.5, 14), (15, 13, 12), (14, 12.5, 10)):
-        if gy - sum(RT + n_ * RL + RG for n_ in _rows) - _below >= 96: break
+        if gy - sum(RT + n_ * RL + RG for n_ in _rows) - _below >= FLOOR: break
     for row in range(3):                 # each row as tall as its longer reading
         pair = (d['dims'][row], d['dims'][row + 3])
         rows_used = max(len(wrap(x[3], 'SCS', 9.5, DESC_W)) for x in pair)
@@ -789,15 +792,78 @@ def render(d, capture=None, out=None):
 
     # the page keeps only what a parent reads: shape, evidence, teacher's voice, actions.
     # The full transcript stays in case.json as the record — it is not printed on this page.
-    if gy < 96:
-        raise ValueError(f'内容超出版面 {96 - gy:.0f}pt：请精简解读、游戏或老师评语')
+    if gy < FLOOR:
+        raise ValueError(f'内容超出版面 {FLOOR - gy:.0f}pt：请精简解读、游戏或老师评语')
 
-    # footer on its own clean label, never across the drawn landscape
-    _fr = '参照剑桥 Starters 与 IELTS 口语标准'
-    _fw = sw(_fr, 'SCS', 8) + 20
-    c.setFillColor(CARD); c.setFillAlpha(0.92)
-    c.roundRect(W / 2 - _fw / 2, 19, _fw, 15, 7.5, stroke=0, fill=1); c.setFillAlpha(1)
-    textC(W / 2, 23.5, _fr, 'SCS', 8, INK)
+    # ===== footer: the group's logo, the kindergarten's logo, and the standards in fine print =====
+    # It sits on the hill's own ground (the band below FOOT_TOP), so the scene stays one picture.
+    # Logos are transparent PNGs drawn straight onto the ground — no chip behind them (never
+    # recoloured or stretched: contain-fit). The
+    # kindergarten logo comes from case.json "school_logo" (or assets/brand/kindergarten-logo.png);
+    # until there is one, a dashed placeholder keeps its place.
+    def logo_chip(x, w, path, label):
+        y0, h = E + 4, FOOT_TOP - E - 10
+        if path and os.path.isfile(path):
+            from reportlab.lib.utils import ImageReader
+            ir = ImageReader(path); iw, ih = ir.getSize()
+            k = min(w / iw, h / ih)
+            c.drawImage(ir, x + (w - iw * k) / 2, y0 + (h - ih * k) / 2, iw * k, ih * k, mask='auto')
+        else:
+            c.setStrokeColor(FAINT); c.setLineWidth(0.7); c.setDash(2.2, 1.8)
+            c.roundRect(x + 4, y0 + 4, w - 8, h - 8, 3.5, stroke=1, fill=0); c.setDash()
+            c.setFillColor(GREY); c.setFont('SCS', 6); c.drawCentredString(x + w / 2, y0 + h / 2 - 2, label)
+    _lw, _kw = 76, 50                  # the group's logo is wide, a kindergarten's is usually a crest
+    logo_chip(E + 8, _lw, os.path.join(BRAND, 'cieg-logo.png'), '集团标志')
+    _sl = d.get('school_logo')
+    _sl = os.path.join(CASE, _sl) if _sl else os.path.join(BRAND, 'kindergarten-logo.png')
+    logo_chip(W - E - 8 - _kw, _kw, _sl, '幼儿园标志')
+    # the fine print, in the register of an exam's published marking notes: paragraph one is the
+    # rule (what each dimension examines and which IELTS / Starters description it is set against,
+    # what the flower counts mean), paragraph two the source documents. Plain weight throughout,
+    # no space between Chinese and English, full-width Chinese punctuation. Anchors as references/rubric.md.
+    _fx0, _fx1 = E + 8 + _lw + 12, W - E - 8 - _kw - 12
+    _fs, _fl = 4.6, 5.85
+    _fp = ['评分说明：本报告设六个评定维度，各维度依据本次录音取证，并对照IELTS口语评分描述与剑桥Pre A1 Starters相应要求定档。'
+           '词汇考查用词范围与准确性（朗读任务考查核心词认读），参照Starters主题词表及IELTS Lexical Resource；'
+           '句式与语法考查句型范围与错误情况（朗读任务考查漏读、添读与替换），参照Starters语法结构清单及IELTS Grammatical Range and Accuracy；'
+           '完整与创意考查表达结构的完整性与自主组句，参照Starters口语能力描述（can-do statements）及IELTS Fluency and Coherence；'
+           '发音准确度考查词语能否被准确辨识（朗读任务对照原文），参照IELTS Pronunciation；'
+           '流利度考查语速、长停顿、重复与填充词，参照IELTS Fluency and Coherence；'
+           '语调与重音考查句末升降与语句起伏，参照IELTS Pronunciation。'
+           '各维度以五朵小红花为满档：五朵表示该维度无可指认的失误且有突出表现，四朵表示整体达到要求、存在一处明确的待改进点，三朵及以下均附具体证据。',
+           '依据文本：IELTS Speaking Band Descriptors（public version），IDP IELTS、British Council与Cambridge University Press & Assessment；'
+           'Cambridge English Pre A1 Starters考试大纲及词汇表、语法结构清单，Cambridge University Press & Assessment；'
+           'Common European Framework of Reference for Languages: Companion Volume，Council of Europe，2020。']
+    _plain = [t.replace('**', '') for t in _fp]
+    _flines = [ln for t in _plain for ln in wrap(t, 'SCS', _fs, _fx1 - _fx0)]
+    _band_mid = E + 4 + (FOOT_TOP - E - 10) / 2
+    _fy = _band_mid + (len(_flines) - 1) * _fl / 2 - _fs * 0.35
+    _fink = HexColor('#3F4A3C')
+    if len(_flines) * _fl > FOOT_TOP - E - 6:
+        raise ValueError('页脚参考标准超过页脚高度，请精简条目')
+    if CAP is not None:
+        for t, pl in zip(_fp, _plain):
+            runs = [(seg, 'SCB' if k % 2 else 'SCS', False) for k, seg in enumerate(t.split('**')) if seg]
+            CAP.append(dict(t='para', x=_fx0, y=_fy, runs=runs, size=_fs, color='3F4A3C', maxw=_fx1 - _fx0, leading=_fl, rot=0))
+            _fy -= len(wrap(pl, 'SCS', _fs, _fx1 - _fx0)) * _fl
+    else:
+        for t, pl in zip(_fp, _plain):
+            # which characters are bold, by position in the plain text
+            bold, pos = [], 0
+            for k, seg in enumerate(t.split('**')):
+                bold += [bool(k % 2)] * len(seg)
+            off = 0
+            for ln in wrap(pl, 'SCS', _fs, _fx1 - _fx0):
+                start = pl.find(ln, off); start = off if start < 0 else start
+                xx, i = _fx0, 0
+                while i < len(ln):                        # draw runs of equal weight
+                    j = i
+                    b_ = bold[start + i] if start + i < len(bold) else False
+                    while j < len(ln) and (bold[start + j] if start + j < len(bold) else False) == b_: j += 1
+                    seg = ln[i:j]; f_ = 'SCB' if b_ else 'SCS'
+                    c.setFont(f_, _fs); c.setFillColor(_fink); c.drawString(xx, _fy, seg); xx += sw(seg, f_, _fs)
+                    i = j
+                off = start + len(ln); _fy -= _fl
     c.showPage(); c.save()
     if CAP is None: print('saved', d['out'])
 
