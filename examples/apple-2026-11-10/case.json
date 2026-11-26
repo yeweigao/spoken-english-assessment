@@ -5,12 +5,6 @@
   "date": "2026.11.10",
   "task": "speak",
   "photo": "photo.jpg",
-  "overview": [
-    "讲了什么：她把「设一个密码」从头讲到尾，先挑词、再挑字母，最后拼出来揭晓。",
-    "最棒的：一件事从问好讲到道谢，顺序一步不乱，像个小老师。",
-    "说得怎么样：不慌不忙，没有「嗯、啊」，句子说完都稳稳收住。",
-    "要加油的：有几个词的最后一个音还没送出来，别人会听成别的词。"
-  ],
   "mark": [
     "eight",
     "salad"
@@ -20,40 +14,40 @@
       "词汇",
       "用得准",
       4,
-      "本课词都用在对的地方：password、choose、letter、number；还自己挑了 chocolate 和 salad 当原料。"
+      "能在熟悉话题里主动用上本课词汇：password、choose、letter、number 均用得恰当，还能自选 chocolate、salad。"
     ],
     [
       "句式与语法",
       "挺稳当",
       4,
-      "四步用 first、then、next、last 领着走，顺序不乱；小瑕疵一处：for me 应是 for myself。"
+      "已能用 first、then、next、last 串联步骤，叙述顺序清楚；反身代词还需巩固，如 for me 应为 for myself。"
     ],
     [
       "完整与创意",
       "有头有尾",
       5,
-      "开头、步骤、揭晓、道谢都齐；密码是自己拼的，不是背的。"
+      "已能完整讲完一件事：问好、四个步骤、揭晓、道谢一应俱全；密码由她自己拼出，能自主组织表达。"
     ],
     [
       "发音准确度",
       "很清楚",
       4,
-      "大意全被听懂；卡在词尾音：eight 被听成 ace，salad 被听成 said。"
+      "整体发音清晰可懂，元音准确；词尾辅音还需巩固，如 eight 的 t、salad 的 d 没有送出。"
     ],
     [
       "流利度",
       "很顺溜",
       4,
-      "语速 3.1 音节/秒，没有「嗯、啊」；改了一次口，想字母时停了 1.4 秒。"
+      "已能连贯讲述，语速约 3.1 音节/秒，没有填充词；想字母时停顿 1.4 秒，改口一次。"
     ],
     [
       "语调与重音",
       "有起伏",
       4,
-      "跨度 11.6 个半音，句尾多是降调、稳稳落地；salad 的重音落到了后面。"
+      "已建立陈述句降调，跨度 11.6 个半音，句尾稳稳落下；双音节词重音还需巩固，如 salad 重音落在后面。"
     ]
   ],
-  "goal": "把词尾音补齐：eight 的 t、salad 的 d 都念出来。",
+  "goal": "下一步把词尾辅音读完整：eight 的 t、salad 的 d。",
   "games": [
     [
       "词尾音大扫除",
@@ -68,5 +62,9 @@
       "挑两个喜欢的词，各取两字母，加两个数字，拼出来念给大家听。"
     ]
   ],
-  "script": "Hello everyone, my name is Apple. I want to set a password for me. First, I choose two words: chocolate and salad. Then I choose two letters C E from chocolate. I choose two letters A D from salad. Next, I choose two numbers: four and eight. And last, I put them together. My password is 8ADEC4. Thank you!"
+  "script": "Hello everyone, my name is Apple. I want to set a password for me. First, I choose two words: chocolate and salad. Then I choose two letters C E from chocolate. I choose two letters A D from salad. Next, I choose two numbers: four and eight. And last, I put them together. My password is 8ADEC4. Thank you!",
+  "teacher": {
+    "comment": "Apple 已经能用英语把一件事从头到尾讲清楚，步骤之间衔接自然，还能自己设计密码、自己揭晓答案，表达很有主见。她说话不慌不忙，句子收得很稳，已经有了用英语交流的自信。接下来请她把每个词的最后一个音送完整，比如 eight 和 salad，说出来会更清楚。",
+    "sign": ""
+  }
 }

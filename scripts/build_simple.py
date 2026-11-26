@@ -250,6 +250,8 @@ def validate(d):
     if d.get('theme') not in THEMES:
         raise ValueError('theme 只能是 ' + ' / '.join(f'{k}（{v["label"]}）' for k, v in THEMES.items()))
     tch = d.get('teacher')
+    if not tch:
+        raise ValueError('缺老师说：case.json 写 teacher: {comment, sign}——评语由 AI 依本次测评写四五句，署名问老师；简版右栏固定是老师说，没有总览')
     if tch:
         cm = str(tch.get('comment') or '').strip()
         if not cm:
