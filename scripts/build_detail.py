@@ -143,7 +143,8 @@ def make_front(c, d):
     text(M + 2, hy, detail.get('season', '2026 秋 · 口语测评'), 'SCS', 8.5, SOFT)
     text(M, hy - 34, '英语口语成长记录', DISP, 30, INK)
     text(M + 2, hy - 52, 'My English Speaking Report', 'ENB', 11, SOFT)
-    text(M + 2, hy - 74, f"姓名 {case['name']}  ·  课题 {case['topic']}  ·  {case['date']}  ·  {SECS}", 'SCS', 9.5, INK)
+    _tlab = case.get('topic_label') or ('篇目' if case.get('task') == 'read' else '话题')
+    text(M + 2, hy - 74, f"姓名 {case['name']}  ·  {_tlab} {case['topic']}  ·  {case['date']}  ·  {SECS}", 'SCS', 9.5, INK)
 
     stage = detail.get('stage', '绽放')
     gx, gy, gw, gh = W - M - 236, hy - 66, 236, 62

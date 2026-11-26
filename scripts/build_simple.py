@@ -231,6 +231,15 @@ def lead_of(line):
     k = line.find('：')
     return line[:k + 1] if 0 < k <= 6 else ''
 
+def topic_label(d):
+    """What the header calls this piece of work. '课题' reads like a textbook unit test, which is
+    not what a free performance is; a book gets 篇目, everything else 话题. case.json may override."""
+    return d.get('topic_label') or ('篇目' if d.get('task') == 'read' else '话题')
+
+def meta_line(d):
+    """The one line under the title: who, what, how long, when."""
+    return f"姓名 {d['name']} · {topic_label(d)} {d['topic']} · 录音 {d['secs']} · {d['date']}"
+
 def common_run(a, b):
     """Longest run of words the two texts share — spaces and punctuation don't count."""
     a, b = re.sub(r'[\s\W_]+', '', a), re.sub(r'[\s\W_]+', '', b)
@@ -295,9 +304,9 @@ def validate(d):
             raise ValueError(f'mark 里的「{w_}」不在全文里')
         if w_.lower() not in pron.lower():
             raise ValueError(f'mark 里的「{w_}」须同时出现在「发音准确度」解读或小目标里，前后才对得上')
-    meta = f"姓名 {d['name']} · 课题 {d['topic']} · 录音 {d['secs']} · {d['date']}"
+    meta = meta_line(d)
     if M + sw(meta, 'SCS', 10.5) > PHOTO_X - 14:
-        raise ValueError('页眉信息行太长，会碰到照片：请缩短课题')
+        raise ValueError('页眉信息行太长，会碰到照片：请缩短题目')
 
 PHOTO_W, PHOTO_H = 96, 112
 PHOTO_X, PHOTO_TOP = W - M - PHOTO_W + 4, H - 28
@@ -510,7 +519,7 @@ def render(d, capture=None, out=None):
     c.setFillColor(HexColor(T['sun']))
     _keep_out = [(OVER_X - 8, L['oy0'] - 400, W, L['oy0'] + 16),                 # overview column
                  (M - 4, H - 80, M + 12 + max(sw('英语口语测评报告', DISP, 25),                  # title + meta line
-                                              sw(f"姓名 {d['name']} · 课题 {d['topic']} · 录音 {d['secs']} · {d['date']}", 'SCS', 10.5)), H),
+                                              sw(meta_line(d), 'SCS', 10.5)), H),
                  (PHOTO_X - 14, PHOTO_TOP - PHOTO_H - 16, PHOTO_X + PHOTO_W + 14, PHOTO_TOP + 16)]
     _rays = []
     for _k in range(12):
@@ -653,7 +662,7 @@ def render(d, capture=None, out=None):
     c.setStrokeColor(HexColor(T['frame'])); c.setLineWidth(8); c.rect(E - 4, E - 4, W - 2 * E + 8, H - 2 * E + 8, stroke=1, fill=0)
     # ---------- 1. header: identity + overall ----------
     text(M, H - 46, '英语口语测评报告', DISP, 25, INK)
-    text(M, H - 68, f"姓名 {d['name']} · 课题 {d['topic']} · 录音 {d['secs']} · {d['date']}", 'SCS', 10.5, INK)
+    text(M, H - 68, meta_line(d), 'SCS', 10.5, INK)
     # small photo, top right: rounded, yellow-framed (kindergarten album)
     pw2, ph2 = PHOTO_W, PHOTO_H
     px2, py2 = PHOTO_X, PHOTO_TOP - PHOTO_H
