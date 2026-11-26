@@ -6,6 +6,7 @@ references/pronunciation-coach.md, copied verbatim; nothing is improvised. case.
 single focus sound of the report:
 
     "focus_sound": {"target": "θ", "heard_as": "f", "words": ["three"]}
+    (or a list of two such sounds when two problems both matter)
 
 and this module checks, against the CMU Pronouncing Dictionary bundled in assets/dict (BSD-style
 licence beside it), that
@@ -15,8 +16,8 @@ licence beside it), that
      words that carry the sound;
   4. any sentence in 老师说 / 小目标 / 在家练 that talks about how to move the tongue, lips, teeth or
      breath contains the table's 纠音说法 for that sound, word for word;
-  5. one focus: the practice words (mark) come from the focus words, and 小目标, 老师说 and at least
-     one game all point at it.
+  5. at most two focus sounds; the practice words (mark) come from their words, 小目标 names each,
+     老师说 points at them, and each has at least one game.
 Run directly to self-check the table:  python3 scripts/coach.py"""
 import os, re
 
@@ -98,14 +99,20 @@ def _english_lists(s):
     return [re.findall(r"[A-Za-z][A-Za-z'\-]*", m.group(0))
             for m in re.finditer(r"[A-Za-z][A-Za-z'\-]*(?:\s*[、，,/]\s*[A-Za-z][A-Za-z'\-]*)+", s)]
 
+def focus_list(d):
+    """focus_sound may be one sound ({target, heard_as, words}) or a list of one or two."""
+    fs = d.get('focus_sound')
+    if not fs: return []
+    return [fs] if isinstance(fs, dict) else list(fs)
+
 def check(d):
     """Raise ValueError with an actionable message; return None when the case passes."""
     rows = table()
     tch = (d.get('teacher') or {}).get('comment', '')
     games = [f'{g[0]}：{g[1]}' for g in d.get('games', [])]
     places = [('小目标', d.get('goal', '')), ('老师说', tch)] + [(f'在家练「{g[0]}」', f'{g[0]}：{g[1]}') for g in d.get('games', [])]
-    fs = d.get('focus_sound')
-    if not fs:
+    fl = focus_list(d)
+    if not fl:
         for where, text in places:
             for sen in _sentences(text):
                 hit = next((k for k in ARTIC if k in sen), None)
@@ -113,46 +120,60 @@ def check(d):
                     raise ValueError(f'{where}写了发音部位（「{hit}」）却没有 focus_sound：先在 case.json 写 focus_sound，'
                                      f'纠音说法只能照抄 references/pronunciation-coach.md')
         return
-    tgt = fs.get('target')
-    if tgt not in rows:
-        raise ValueError(f'focus_sound.target「{tgt}」不在纠音表里；可选：' + '、'.join(rows))
-    words = [w.lower() for w in fs.get('words') or []]
-    if not words:
-        raise ValueError('focus_sound.words 为空：写上录音里出问题的那一两个词')
-    for w in words:
-        if not phones(w):
-            raise ValueError(f'CMU 词典里查不到 {w}：换一个录音里出现、词典能查到的例词')
-        if not carries(tgt, w):
-            ph = ' '.join(phones(w)[0][1])
-            raise ValueError(f'{w} 不含纠音表「{rows[tgt]["name"]}」这个音（词典：{ph}），不能作为它的例词')
-    tip = rows[tgt]['tip']
+    if len(fl) > 2:
+        raise ValueError(f'focus_sound 写了 {len(fl)} 个音：英语学习小建议最多练两个，按「影响听懂 > 出现次数多」留最要紧的两个，'
+                         f'其余写进发音准确度解读')
+    tgts, words_of = [], {}
+    for fs in fl:
+        tgt = fs.get('target')
+        if tgt not in rows:
+            raise ValueError(f'focus_sound.target「{tgt}」不在纠音表里；可选：' + '、'.join(rows))
+        if tgt in tgts:
+            raise ValueError(f'focus_sound 里「{tgt}」写了两次')
+        words = [w.lower() for w in fs.get('words') or []]
+        if not words:
+            raise ValueError(f'focus_sound「{tgt}」的 words 为空：写上录音里出问题的那一两个词')
+        for w in words:
+            if not phones(w):
+                raise ValueError(f'CMU 词典里查不到 {w}：换一个录音里出现、词典能查到的例词')
+            if not carries(tgt, w):
+                ph = ' '.join(phones(w)[0][1])
+                raise ValueError(f'{w} 不含纠音表「{rows[tgt]["name"]}」这个音（词典：{ph}），不能作为它的例词')
+        tgts.append(tgt); words_of[tgt] = words
+    allw = [w for t in tgts for w in words_of[t]]
+    tips = [rows[t]['tip'] for t in tgts]
     for where, text in places:
         for sen in _sentences(text):
             hit = next((k for k in ARTIC if k in sen), None)
-            if hit and tip not in sen:
-                raise ValueError(f'{where}讲了发音部位（「{hit}」），但不是纠音表的说法：这一句请照抄「{tip}」，或删掉发音部位只留练法')
+            if hit and not any(tp in sen for tp in tips):
+                raise ValueError(f'{where}讲了发音部位（「{hit}」），但不是纠音表的说法：这一句请照抄'
+                                 + ' 或 '.join(f'「{tp}」' for tp in tips) + '，或删掉发音部位只留练法')
         for sen in _sentences(text):
-            if not any(k in sen for k in ARTIC + SOUND_TALK):     # a list only counts when the sentence is about the sound
+            if not any(k in sen for k in ARTIC + SOUND_TALK):     # a list only counts when the sentence is about a sound
                 continue
             for run in _english_lists(sen):
-                if not any(x.lower() in words for x in run):
+                here = [t for t in tgts if any(x.lower() in words_of[t] for x in run)]
+                if not here:
                     continue
-                bad = [x for x in run if len(x) > 1 and phones(x) and not carries(tgt, x)]
+                bad = [x for x in run if len(x) > 2 and phones(x) and not any(carries(t, x) for t in here)]   # th、v、ng… are sound labels
                 if bad:
-                    raise ValueError(f'{where}把 {"、".join(bad)} 和 {"、".join(x for x in run if x.lower() in words)} 一起当「{rows[tgt]["name"]}」练，'
+                    name = '、'.join(rows[t]['name'] for t in here)
+                    raise ValueError(f'{where}把 {"、".join(bad)} 和 {"、".join(x for x in run if x.lower() in allw)} 一起当「{name}」练，'
                                      f'但 {"、".join(bad)} 不含这个音（词典核对）：删掉或换成含这个音的词')
     marks = [m.lower() for m in d.get('mark', [])]
-    stray = [m for m in marks if m not in words]
+    stray = [m for m in marks if m not in allw]
     if stray:
-        raise ValueError(f'练习词 {"、".join(stray)} 不在 focus_sound.words 里：一份报告只练一个重点音，练习词从重点音的例词里取')
-    has = lambda s: any(re.search(rf'(?<![A-Za-z]){re.escape(w)}(?![A-Za-z])', s, re.I) for w in words)
-    if not has(d.get('goal', '')):
-        raise ValueError(f'小目标没有点到重点音的例词（{"、".join(words)}）：小目标、老师说、在家练要说同一件事')
-    if tch and not has(tch):
-        raise ValueError(f'老师说没有点到重点音的例词（{"、".join(words)}）：老师说的下一步要和小目标一致')
-    pair_words = [x.lower() for x in re.findall(r"[A-Za-z]+", rows[tgt]['pairs'])]
-    if not any(has(g) or any(re.search(rf'(?<![A-Za-z]){p}(?![A-Za-z])', g, re.I) for p in pair_words) for g in games):
-        raise ValueError(f'在家练三个游戏都没练到重点音：至少一个游戏用上例词或纠音表的对比词（{rows[tgt]["pairs"]}）')
+        raise ValueError(f'练习词 {"、".join(stray)} 不在 focus_sound 的例词里：练习词从重点音的例词里取')
+    has = lambda s, ws: any(re.search(rf'(?<![A-Za-z]){re.escape(w)}(?![A-Za-z])', s, re.I) for w in ws)
+    for t in tgts:
+        if not has(d.get('goal', ''), words_of[t]):
+            raise ValueError(f'小目标没有点到重点音「{rows[t]["name"]}」的例词（{"、".join(words_of[t])}）：'
+                             f'每个重点音都要在小目标里出现，小目标、老师说、在家练说同一件事')
+        pair_words = [x.lower() for x in re.findall(r"[A-Za-z]+", rows[t]['pairs'])]
+        if not any(has(g, words_of[t]) or has(g, pair_words) for g in games):
+            raise ValueError(f'在家练没有一个游戏练到「{rows[t]["name"]}」：用上例词或纠音表的对比词（{rows[t]["pairs"]}）')
+    if tch and not has(tch, allw):
+        raise ValueError(f'老师说没有点到重点音的例词（{"、".join(allw)}）：老师说的下一步要和小目标一致')
 
 if __name__ == '__main__':                     # self-check: in every contrast pair one word carries the sound
     rows = table(); bad = 0

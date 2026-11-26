@@ -313,6 +313,9 @@ def validate(d):
         if not (isinstance(n, int) and 0 <= n <= 5): raise ValueError(f'{nm} 的花数须为 0–5')
         if len(wrap(desc, 'SCS', 9.5, DESC_W)) > 3: raise ValueError(f'「{nm}」解读超过三行，请精简')
     if len(d['games']) != 3: raise ValueError('games 须为 3 个')
+    for gn, _ in d['games']:
+        if sw(gn, 'SCB', 10.5) > 78:                   # the name column runs from M+84 to the description at M+168
+            raise ValueError(f'在家练游戏名「{gn}」太长，会压到说明：游戏名控制在五六个字（英文词算两三个字）')
     if len(wrap(d['goal'], 'SCS', 10.5, CW - 90)) > 1: raise ValueError('goal 须一行写完')
     for where, s in ([(f'「{x[0]}」解读', x[3]) for x in d['dims']] + [('老师说', (tch or {}).get('comment', '')), ('小目标', d['goal'])]
                      + [(f'在家练「{g[0]}」', f'{g[0]}：{g[1]}') for g in d['games']]):
