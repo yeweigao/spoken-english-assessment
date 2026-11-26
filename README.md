@@ -40,6 +40,7 @@ python3 scripts/build_detail.py            # 详细版两页 report.pdf（案例
 - `SKILL.md` / `skill.yaml` — 技能规程（可直接作为 Muse skill 安装到 `~/workspace/custom-skills/` 或 `~/.claude/skills/` 类目录）
 - `scripts/` — 抽帧选图、识别、声学分析、声音评分、简版与正/背面生成、合并、字体下载、内部依据文件
 - `references/` — 六维量规、对外表述边界（内部）、文字与版式体系
+- `assets/brand/` — 品牌标志（`cieg-logo.png` 集团、`kindergarten-logo.png` 幼儿园），RGBA 透明底 PNG，随包分发；换园所 logo 时把新图覆盖 `kindergarten-logo.png` 或在 case.json 写 `"school_logo": "你的图.png"`。白底图用 `python3 scripts/make_logo_transparent.py 输入图 输出.png [预览底色]` 抠成透明（盾形等内部白底会保留，只删外圈白）。
 - `assets/fonts/` — 报告字体**不入 git**（约 22 MB）：跑 `download_fonts.py` 从 Google Fonts 取并实例化静态字重（思源黑体、站酷快乐体、Inter、Patrick Hand，均为 SIL OFL，许可文本 `OFL-*.txt` 已入库）。打包 zip 分发 skill 时把该目录一并放进去，再用 `install_fonts.py` 装到老师电脑。
 
   手动下载：Noto Sans SC https://fonts.google.com/noto/specimen/Noto+Sans+SC · ZCOOL KuaiLe https://fonts.google.com/specimen/ZCOOL+KuaiLe · Inter https://fonts.google.com/specimen/Inter · Patrick Hand https://fonts.google.com/specimen/Patrick+Hand

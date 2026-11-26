@@ -18,6 +18,7 @@ description: 儿童英语口语测评：给一段孩子的英语口语录音或�
 
 - 完整范例两个：`examples/toto-2026-11-09/`（纯音频）与 `examples/apple-2026-11-10/`（真实视频输入），各含 `case.json` 与实测数据；成品 PDF 与照片不随仓库分发。新案例放 `cases/<名字>-<日期>/`，`cases/` 不进仓库。
 
+- 品牌标志在 `assets/brand/`（集团 `cieg-logo.png`、幼儿园 `kindergarten-logo.png`，均为 RGBA 透明底）。换园所 logo：覆盖 `assets/brand/kindergarten-logo.png`，或在 case.json 写 `"school_logo": "文件名.png"`（放案例目录）。白底 JPG/PNG 用 `python3 scripts/make_logo_transparent.py 输入 输出.png [预览底色]` 抠透明：只删画面外圈的白，logo 自己圈住的内部白底（如盾心）保留。
 - 版式与文字的全部规矩在 `references/type-system.md`（字号阶梯、印章、气泡、背面构成、简版主题色与老师说），由案例的逐项修订归一，脚本照它执行。
 
 ## 路线选择：听评快速档（默认）或实测版（按需）

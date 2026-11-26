@@ -10,3 +10,6 @@ assets/*.log
 .venv/
 cases/
 dist/
+.DS_Store
+assets/.DS_Store
+assets/brand/*-preview.png
