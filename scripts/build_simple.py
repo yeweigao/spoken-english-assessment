@@ -232,6 +232,8 @@ MEASURE = re.compile(r'\d+(\.\d+)?\s*(秒|个词|个半音|半音|音节|次|个
 # narrating the viewing or the moment (今天、刚才) turns a summary back into a replay
 IN_ROOM = re.compile(r'课上|课堂|班上|全班|小朋友们|大家|现场|当场|在场|台下|台上|听众|观众|我们班|我在旁边'
                      r'|看(了|完).{0,40}?(视频|录音)|(这段|这次|这个)(视频|录音)|视频里|录音里|今天|刚才|一开口')
+# 老师说 encourages; it does not advise — next steps and practice live in 英语学习小建议
+ADVICE = re.compile(r'下一步|接下来|还需|需要|巩固|多练|练准|练熟|练稳|在家|回家|对着镜子|建议|要注意')
 # a song or a show is only the carrier of the evidence: the conclusions are English ability (words,
 # sentences, sounds, flow, stress), never how well the song or the show went, nor how it was sung
 # or acted (backstops — SKILL.md sets the focus from the first listen)
@@ -286,6 +288,11 @@ def validate(d):
             run = common_run(cm, desc)
             if len(run) >= 7:
                 raise ValueError(f'老师说与「{nm}」解读重复了「{run}」：换一种说法，或删掉其中一处')
+        import coach
+        m = ADVICE.search(cm) or re.search('|'.join(coach.ARTIC), cm)
+        if m:
+            raise ValueError(f'老师说写了「{m.group()}」：老师说是鼓励式的阶段总评，只说孩子已经做到什么、最亮眼什么、'
+                             f'学习品质和一句期许；下一步、练法、发音部位都放到英语学习小建议')
         m = IN_ROOM.search(cm)
         if m:
             raise ValueError(f'老师说写了「{m.group()}」：老师说是孩子这一阶段英语口语的总评加鼓励，不复述这段视频——'

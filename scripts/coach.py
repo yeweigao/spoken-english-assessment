@@ -16,8 +16,8 @@ licence beside it), that
      words that carry the sound;
   4. any sentence in 老师说 / 小目标 / 在家练 that talks about how to move the tongue, lips, teeth or
      breath contains the table's 纠音说法 for that sound, word for word;
-  5. at most two focus sounds; the practice words (mark) come from their words, 小目标 names each,
-     老师说 points at them, and each has at least one game.
+  5. at most two focus sounds; the practice words (mark) come from their words, 小目标 names each
+     (word or sound name), and each has at least one game that uses its words or contrast pairs.
 Run directly to self-check the table:  python3 scripts/coach.py"""
 import os, re
 
@@ -110,7 +110,7 @@ def check(d):
     rows = table()
     tch = (d.get('teacher') or {}).get('comment', '')
     games = [f'{g[0]}：{g[1]}' for g in d.get('games', [])]
-    places = [('小目标', d.get('goal', '')), ('老师说', tch)] + [(f'在家练「{g[0]}」', f'{g[0]}：{g[1]}') for g in d.get('games', [])]
+    places = [('小目标', d.get('goal', '')), ('老师说', tch)]     # 老师说 carries no articulation at all (build_simple checks) + [(f'在家练「{g[0]}」', f'{g[0]}：{g[1]}') for g in d.get('games', [])]
     fl = focus_list(d)
     if not fl:
         for where, text in places:
@@ -166,14 +166,14 @@ def check(d):
         raise ValueError(f'练习词 {"、".join(stray)} 不在 focus_sound 的例词里：练习词从重点音的例词里取')
     has = lambda s, ws: any(re.search(rf'(?<![A-Za-z]){re.escape(w)}(?![A-Za-z])', s, re.I) for w in ws)
     for t in tgts:
-        if not has(d.get('goal', ''), words_of[t]):
-            raise ValueError(f'小目标没有点到重点音「{rows[t]["name"]}」的例词（{"、".join(words_of[t])}）：'
-                             f'每个重点音都要在小目标里出现，小目标、老师说、在家练说同一件事')
+        goal = d.get('goal', '')
+        named = t in goal if not t.isascii() or '-' in t else has(goal, [t])   # the row key: 'u-e', '词尾辅音', '重音' …
+        if not (has(goal, words_of[t]) or named):
+            raise ValueError(f'小目标没有点到重点音「{rows[t]["name"]}」：写上一个例词（{"、".join(words_of[t])}）'
+                             f'或音名「{t}」，小目标和在家练说同一件事')
         pair_words = [x.lower() for x in re.findall(r"[A-Za-z]+", rows[t]['pairs'])]
         if not any(has(g, words_of[t]) or has(g, pair_words) for g in games):
             raise ValueError(f'在家练没有一个游戏练到「{rows[t]["name"]}」：用上例词或纠音表的对比词（{rows[t]["pairs"]}）')
-    if tch and not has(tch, allw):
-        raise ValueError(f'老师说没有点到重点音的例词（{"、".join(allw)}）：老师说的下一步要和小目标一致')
 
 if __name__ == '__main__':                     # self-check: in every contrast pair one word carries the sound
     rows = table(); bad = 0
