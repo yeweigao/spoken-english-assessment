@@ -315,13 +315,13 @@ def note_height(d):
     return 12 + 22 + len(lines) * NOTE_LEAD + (15 if sign else 4) + 10
 
 def right_bottom(d, oy0):
-    """Bottom edge of whatever stands in the column right of the radar."""
+    """Bottom edge of whatever stands in the column right of the radar, and the gap it wants below."""
     if d.get('teacher'):
-        return oy0 - note_height(d) - 12
+        return oy0 - note_height(d), 10           # the note's own edge; 10pt of air under it
     yy = oy0 - 21
     for ln in d.get('overview') or []:
         yy -= 14 * len(wrap(ln, 'SCS', 10, OVER_W)) + 4
-    return yy
+    return yy, 40
 
 def top_layout(d):
     """Where the top half ends, computed from content — the cream field, the right column and the
@@ -330,8 +330,8 @@ def top_layout(d):
     cy0 = hy - 110                                 # radar centre
     photo_bottom = PHOTO_TOP - PHOTO_H - 8
     oy0 = min(hy - 24, photo_bottom - 22)          # right column starts below the photo print
-    yy = right_bottom(d, oy0)
-    iy = min(cy0 - 128, yy - 40)                   # 逐项解读 heading
+    yy, gap = right_bottom(d, oy0)
+    iy = min(cy0 - 128, yy - gap)                 # 逐项解读 heading
     return dict(hy=hy, cy0=cy0, oy0=oy0, iy=iy, field_bottom=iy + 30)
 
 SUN_R, SUN_C = 138, (W - 30, H - 16)
