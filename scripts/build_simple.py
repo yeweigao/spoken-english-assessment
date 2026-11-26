@@ -16,9 +16,11 @@ references/type-system.md, section 简版一页):
 - Radar data in the theme's deep tone; red is reserved for earned flowers and
   the practice-word underline, which appear ONLY where they carry that meaning.
   No overall grade line and no invented framework tiers.
-- The teacher's note is a human voice after the evidence: it sits between the
-  readings and 接下来怎么做, appears only when case.json supplies a real
-  comment, and vanishes whole when it doesn't.
+- 老师说 is always there, signed with the name the teacher gives: the AI writes it as the child's
+  stage summary of spoken English with real encouragement — not a replay of this video, no
+  "I watched the video", nothing that puts the teacher in the room (the parent filmed it).
+- Everything on the page judges the child's spoken English level only: a song, a show or a game
+  is just the carrier of the evidence, never judged as singing or acting.
 - Say each thing once: the radar carries dimension names only (the verdict
   word lives in the readings), the overview speaks in conclusions without
   measurements, the readings carry the evidence. validate() enforces this.
@@ -225,6 +227,16 @@ NOTE_LEAD = 13
 COLX = (M, M + 272)          # readings: content dimensions left, sound dimensions right
 DESC_W = 222
 MEASURE = re.compile(r'\d+(\.\d+)?\s*(秒|个词|个半音|半音|音节|次|个|%|dB|分贝|Hz)')
+# 老师说 is the child's stage summary with encouragement, not a review of this video. Words that put
+# the teacher (or an audience) in the room give the report away to the parent who filmed it;
+# narrating the viewing or the moment (今天、刚才) turns a summary back into a replay
+IN_ROOM = re.compile(r'课上|课堂|班上|全班|小朋友们|大家|现场|当场|在场|台下|台上|听众|观众|我们班|我在旁边'
+                     r'|看(了|完).{0,40}?(视频|录音)|(这段|这次|这个)(视频|录音)|视频里|录音里|今天|刚才|一开口')
+# a song or a show is only the carrier of the evidence: the conclusions are English ability (words,
+# sentences, sounds, flow, stress), never how well the song or the show went, nor how it was sung
+# or acted (backstops — SKILL.md sets the focus from the first listen)
+PERFORMANCE = re.compile(r'唱|歌|表演|节目|演出|舞|手势|动作|一句不落|忘词')
+NOT_ENGLISH = re.compile(r'(?<![发读念元辅长短重])音准(?!确)|跑调|走调|调子|唱功|旋律|节拍|拍子|打拍|高音|低音|气息|换气|嗓|舞蹈|动作到位|表演力|台风')
 
 def lead_of(line):
     """'最棒的：…' -> '最棒的：' (a lead-in of up to six characters before a full-width colon)."""
@@ -274,6 +286,10 @@ def validate(d):
             run = common_run(cm, desc)
             if len(run) >= 7:
                 raise ValueError(f'老师说与「{nm}」解读重复了「{run}」：换一种说法，或删掉其中一处')
+        m = IN_ROOM.search(cm)
+        if m:
+            raise ValueError(f'老师说写了「{m.group()}」：老师说是孩子这一阶段英语口语的总评加鼓励，不复述这段视频——'
+                             f'不写成在场（课上、大家、现场），也不写「看了视频」「录音里」「今天」「刚才」')
     elif not (2 <= len(d.get('overview') or []) <= 4):
         raise ValueError('没有 teacher 时必须写 overview 2–4 条（有老师评语时右栏被评语占用，overview 可省略）')
     if d.get('task') == 'read' and not d.get('original'):
@@ -298,6 +314,16 @@ def validate(d):
         if len(wrap(desc, 'SCS', 9.5, DESC_W)) > 3: raise ValueError(f'「{nm}」解读超过三行，请精简')
     if len(d['games']) != 3: raise ValueError('games 须为 3 个')
     if len(wrap(d['goal'], 'SCS', 10.5, CW - 90)) > 1: raise ValueError('goal 须一行写完')
+    for where, s in ([(f'「{x[0]}」解读', x[3]) for x in d['dims']] + [('老师说', (tch or {}).get('comment', '')), ('小目标', d['goal'])]
+                     + [(f'在家练「{g[0]}」', f'{g[0]}：{g[1]}') for g in d['games']]):
+        m = PERFORMANCE.search(s) if not where.startswith('在家练') else None
+        if m:
+            raise ValueError(f'{where}写到了「{m.group()}」：歌和表演只是取证的载体，这里写英语水平——'
+                             f'能说出哪些词和句子、哪些音已发准、连不连贯、重音语调，不写歌唱得、节目演得怎么样')
+        m = NOT_ENGLISH.search(s)
+        if m:
+            raise ValueError(f'{where}写到了「{m.group()}」：报告只评英语口语（词、句、发音、流利、语调重音），'
+                             f'不评唱得怎么样、演得怎么样；换成英语上的说法或删掉')
     pron = d['dims'][3][3] + d['goal']
     for w_ in d.get('mark', []):
         if not re.search(r'\b' + re.escape(w_) + r'\b', d['script'], re.I):
@@ -750,7 +776,7 @@ def render(d, capture=None, out=None):
     tch = d.get('teacher')
     # spacing steps down only as far as the page needs: (gap name->reading, leading, gap between rows)
     _rows = [max(len(wrap(x[3], 'SCS', 9.5, DESC_W)) for x in (d['dims'][r], d['dims'][r + 3])) for r in range(3)]
-    _below = 34 + 62 + 24 * len(d['games'])          # 接下来怎么做 + the games, measured as drawn below
+    _below = 34 + 62 + 24 * len(d['games'])          # 英语学习小建议 + the games, measured as drawn below
     for RT, RL, RG in ((17, 14, 16), (16, 13.5, 14), (15, 13, 12), (14, 12.5, 10)):
         if gy - sum(RT + n_ * RL + RG for n_ in _rows) - _below >= FLOOR: break
     for row in range(3):                 # each row as tall as its longer reading
@@ -770,7 +796,7 @@ def render(d, capture=None, out=None):
 
     # ---------- 4. what to do next ----------
     ny = gy - 34
-    head(ny, '接下来怎么做')
+    head(ny, '英语学习小建议')
     _gw = sw(d['goal'], 'SCS', 10.5)
     c.setFillColor(HexColor(T['chip_shadow'])); c.rect(M + 59, ny - 36, _gw + 18, 21, stroke=0, fill=1)
     c.setFillColor(HexColor(T['field'])); c.rect(M + 56, ny - 33, _gw + 18, 21, stroke=0, fill=1)
