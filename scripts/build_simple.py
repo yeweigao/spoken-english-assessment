@@ -307,6 +307,9 @@ def validate(d):
     meta = meta_line(d)
     if M + sw(meta, 'SCS', 10.5) > PHOTO_X - 14:
         raise ValueError('页眉信息行太长，会碰到照片：请缩短题目')
+    # pronunciation coaching: diagnose -> the one table -> dictionary check (scripts/coach.py)
+    import coach
+    coach.check(d)
 
 PHOTO_W, PHOTO_H = 96, 112
 PHOTO_X, PHOTO_TOP = W - M - PHOTO_W + 4, H - 28

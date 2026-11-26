@@ -1,6 +1,6 @@
 # 儿童英语口语测评 · Spoken English Assessment
 
-把一段儿童英语口语录音或视频，做成报告。**默认出简版一页 A4**：页眉 → 六维雷达 + 老师说（便利贴；没评语时退回总览）→ 逐项解读 → 接下来怎么做；颜色可选六套马卡龙主题，底部插画跟着换色。默认路线是**千问原生听音频**——整段听两遍（裸听转写 + 原文锚定逐词核对），不出测量值，几分钟出片。需要可复现的声学测量、或要详细版两页（正面成长记录 + 背面瑞士排版对标表）时，再走本地实测管线。
+把一段儿童英语口语录音或视频，做成报告。**默认出简版一页 A4**：页眉 → 六维雷达 + 老师说（便利贴，每份都有）→ 逐项解读 → 接下来怎么做；颜色可选六套马卡龙主题，底部插画跟着换色。默认路线是**千问原生听音频**——整段听两遍（裸听转写 + 原文锚定逐词核对），不出测量值，几分钟出片。需要可复现的声学测量、或要详细版两页（正面成长记录 + 背面瑞士排版对标表）时，再走本地实测管线。
 
 - 六个维度（词汇 / 句式与语法 / 完整与创意 / 发音准确度 / 流利度 / 语调与重音），维度对标 IELTS 口语四项标准、量规参照剑桥少儿英语 Starters 与 CEFR Pre-A1–A1（对标是维度与量规层面，不是分数换算）
 - 幼儿园孩子不用数字分，用小红花分档（参照剑桥少儿以「盾牌」计数代替分数的做法）
@@ -39,7 +39,8 @@ python3 scripts/build_detail.py            # 详细版两页 report.pdf（案例
 
 - `SKILL.md` / `skill.yaml` — 技能规程（可直接作为 Muse skill 安装到 `~/workspace/custom-skills/` 或 `~/.claude/skills/` 类目录）
 - `scripts/` — 抽帧选图、识别、声学分析、声音评分、简版与正/背面生成、合并、字体下载、内部依据文件
-- `references/` — 六维量规、对外表述边界（内部）、文字与版式体系
+- `references/` — 六维量规、对外表述边界（内部）、文字与版式体系、纠音表 `pronunciation-coach.md`（报告里讲发音部位只能照抄这张表）
+- `assets/dict/` — CMU Pronouncing Dictionary（`cmudict.dict`，BSD 式许可，原文 `LICENSE-cmudict.txt`），`scripts/coach.py` 用它核对纠音例词真含目标音；随包分发，不需联网
 - `assets/brand/` — 品牌标志（`cieg-logo.png` 集团、`kindergarten-logo.png` 幼儿园），RGBA 透明底 PNG，随包分发；换园所 logo 时把新图覆盖 `kindergarten-logo.png` 或在 case.json 写 `"school_logo": "你的图.png"`。白底图用 `python3 scripts/make_logo_transparent.py 输入图 输出.png [预览底色]` 抠成透明（盾形等内部白底会保留，只删外圈白）。
 - `assets/fonts/` — 报告字体**不入 git**（约 22 MB）：跑 `download_fonts.py` 从 Google Fonts 取并实例化静态字重（思源黑体、站酷快乐体、Inter、Patrick Hand，均为 SIL OFL，许可文本 `OFL-*.txt` 已入库）。打包 zip 分发 skill 时把该目录一并放进去，再用 `install_fonts.py` 装到老师电脑。
 

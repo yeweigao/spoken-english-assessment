@@ -7,8 +7,7 @@
   "photo": "portrait.png",
   "theme": "cream",
   "mark": [
-    "mouth",
-    "oval"
+    "mouth"
   ],
   "dims": [
     [
@@ -48,15 +47,15 @@
       "已建立陈述句降调，六句句尾全部下降、跨度 12.9 个半音；YEL-low、SIL-ly 的重音位置正确。"
     ]
   ],
-  "goal": "下一步巩固 th、v 两个音：把 mouth 的 th、oval 的 v 念出来。",
+  "goal": "下一步巩固 th 音：把 mouth 的 th 读清楚，不读成 mouse。",
   "games": [
     [
       "小舌头探险",
-      "对着镜子露一点舌尖说 mouth、teeth、three，专练词尾 th。"
+      "对着镜子说 mouth、teeth、bath，舌尖轻放在上下门牙之间，轻轻吹气。"
     ],
     [
-      "蜜蜂 v 嗡嗡",
-      "上牙轻咬下唇说 oval、love、five，摸喉咙，有震动 v 就出来了。"
+      "mouth 还是 mouse",
+      "轮流说 mouth 和 mouse，让家人猜说的是哪一个，再换过来。"
     ],
     [
       "重音拍手",
@@ -65,7 +64,14 @@
   ],
   "script": "Hi! I am Toto. This is my big round yellow face. These are my three big round blue eyes with six big black and yellow eyebrows. These are my two big pink ears. This is my big oval red mouth. I love the ugly, silly and scary me!",
   "teacher": {
-    "comment": "Toto 已经能用英语围绕一个主题完整地描述，句子又长又稳，结尾还自己编了一句来夸自己，说明他真正在用英语表达想法。他说话从容，每句话都收得很稳。接下来把 th 和 v 两个音练出来，比如 mouth 和 oval，他的英语会更地道。",
+    "comment": "Toto 已经能用英语围绕一个主题完整地描述，句子又长又稳，结尾还自己编了一句来夸自己，说明他真正在用英语表达想法。他说话从容，每句话都收得很稳。接下来把 th 这个音练出来，比如 mouth，他的英语会更地道。",
     "sign": ""
+  },
+  "focus_sound": {
+    "target": "θ",
+    "heard_as": "s",
+    "words": [
+      "mouth"
+    ]
   }
 }
