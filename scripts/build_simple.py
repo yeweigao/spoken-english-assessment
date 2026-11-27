@@ -318,7 +318,10 @@ def validate(d):
         if not (isinstance(n, int) and 0 <= n <= 5): raise ValueError(f'{nm} 的花数须为 0–5')
         if len(wrap(desc, 'SCS', 9.5, DESC_W)) > 3: raise ValueError(f'「{nm}」解读超过三行，请精简')
     if len(d['games']) != 3: raise ValueError('games 须为 3 个')
-    for gn, _ in d['games']:
+    for g in d['games']:
+        if len(g) > 2 and g[2] and g[2] not in TASK_TAGS:
+            raise ValueError(f'在家练「{g[0]}」的标签「{g[2]}」不在可选范围：' + '、'.join(TASK_TAGS))
+        gn = g[0]
         if sw(gn, 'SCB', 10.5) > 78:                   # the name column runs from M+84 to the description at M+168
             raise ValueError(f'在家练游戏名「{gn}」太长，会压到说明：游戏名控制在五六个字（英文词算两三个字）')
     if len(wrap(d['goal'], 'SCS', 10.5, CW - 90)) > 1: raise ValueError('goal 须一行写完')
@@ -336,9 +339,20 @@ def validate(d):
 PHOTO_W, PHOTO_H = 96, 112
 PHOTO_X, PHOTO_TOP = W - M - PHOTO_W + 4, H - 28
 
-def game_h(g):
+# the Starters speaking task each 在家练 game trains, shown as a small label after the game name
+TASK_TAGS = ('听令指认', '看图问答', '描述事物', '说说自己', '发音练习')
+
+def games_cols(d):
+    """x of the task label (None when no game carries one), and x and width of the how-to."""
+    if any(len(g) > 2 and g[2] for g in d['games']):
+        tx = M + 84 + max(sw(g[0], 'SCB', 10.5) for g in d['games']) + 12   # right after the longest name
+        dx = tx + sw('看图问答', 'SCS', 8) + 8 + 6
+        return tx, dx, CW - (dx - M)
+    return None, M + 168, CW - 168
+
+def game_h(d, g):
     """Height of one 在家练 row: 24pt, plus 13pt for every extra line its how-to wraps to."""
-    return 24 + 13 * (len(wrap(g[1], 'SCS', 10, CW - 168)) - 1)
+    return 24 + 13 * (len(wrap(g[1], 'SCS', 10, games_cols(d)[2])) - 1)
 
 def note_lines(d):
     tch = d.get('teacher')
@@ -776,7 +790,7 @@ def render(d, capture=None, out=None):
     tch = d.get('teacher')
     # spacing steps down only as far as the page needs: (gap name->reading, leading, gap between rows)
     _rows = [max(len(wrap(x[3], 'SCS', 9.5, DESC_W)) for x in (d['dims'][r], d['dims'][r + 3])) for r in range(3)]
-    _below = 34 + 62 + sum(game_h(g) for g in d['games'])   # 英语学习小建议 + the games, measured as drawn below
+    _below = 34 + 62 + sum(game_h(d, g) for g in d['games'])   # 英语学习小建议 + the games, measured as drawn below
     for RT, RL, RG in ((17, 14, 16), (16, 13.5, 14), (15, 13, 12), (14, 12.5, 10)):
         if gy - sum(RT + n_ * RL + RG for n_ in _rows) - _below >= FLOOR: break
     for row in range(3):                 # each row as tall as its longer reading
@@ -799,7 +813,7 @@ def render(d, capture=None, out=None):
     head(ny, '英语学习小建议')
     # where the advice comes from, in one grey line at the heading's right end (as the detailed page
     # notes its benchmarks): the four tasks of the Starters speaking test are this stage's directions
-    _adv = '练习方向参照剑桥 Pre A1 Starters 口语考试的四项任务'
+    _adv = '依据剑桥 Pre A1 Starters 口语考查要求设计'
     text(W - M - sw(_adv, 'SCS', 8.5), ny + 1, _adv, 'SCS', 8.5, GREY)
     _gw = sw(d['goal'], 'SCS', 10.5)
     c.setFillColor(HexColor(T['chip_shadow'])); c.rect(M + 59, ny - 36, _gw + 18, 21, stroke=0, fill=1)
@@ -827,12 +841,19 @@ def render(d, capture=None, out=None):
             c.line(ux, ny - 28.6, ux + sw(m_.group(), 'SCS', 10.5), ny - 28.6); c.setDash()
     gy = ny - 62
     text(M, gy, '在家练', 'SCB', 11, INK)
-    for j, (gn, gd) in enumerate(d['games']):
+    tag_x, how_x, how_w = games_cols(d)
+    tag_w = sw('看图问答', 'SCS', 8) + 8
+    for g in d['games']:
+        gn, gd = g[0], g[1]
         bx = M + 64                      # three games, no order between them: a box to tick, not a rank
         c.setStrokeColor(INK); c.setLineWidth(1.1); c.roundRect(bx, gy - 1.5, 11, 11, 2.5, stroke=1, fill=0)
         text(bx + 20, gy, gn, 'SCB', 10.5, INK)
-        para(M + 168, gy, gd, 'SCS', 10, INK, maxw=CW - 168, leading=13)
-        gy -= game_h((gn, gd))             # a how-to that wraps pushes the next game down
+        if tag_x is not None and len(g) > 2 and g[2]:     # the task label: pale theme pill, one width for all
+            c.setStrokeColor(HexColor(T['chip_line'])); c.setFillColor(HexColor(T['field'])); c.setLineWidth(0.6)
+            c.roundRect(tag_x, gy - 2.5, tag_w, 12, 6, stroke=1, fill=1)
+            text(tag_x + (tag_w - sw(g[2], 'SCS', 8)) / 2, gy + 0.3, g[2], 'SCS', 8, HexColor(T['quote']))
+        para(how_x, gy, gd, 'SCS', 10, INK, maxw=how_w, leading=13)
+        gy -= game_h(d, g)                 # a how-to that wraps pushes the next game down
 
     # the page keeps only what a parent reads: shape, evidence, teacher's voice, actions.
     # The full transcript stays in case.json as the record — it is not printed on this page.
@@ -872,7 +893,7 @@ def render(d, capture=None, out=None):
            '发音准确度考查词语能否被准确辨识（朗读任务对照原文），参照IELTS Pronunciation；'
            '流利度考查语速、长停顿、重复与填充词，参照IELTS Fluency and Coherence；'
            '语调与重音考查句末升降与语句起伏，参照IELTS Pronunciation。'
-           '英语学习小建议的练习方向参照Starters口语考试的四项任务：听懂指令并指认、看图回答问题、描述一样事物（Tell me about）、回答关于自己的问题，难度按孩子现阶段的水平确定。'
+           '英语学习小建议依据Starters口语考查要求设计，难度按孩子现阶段的水平确定。'
            '各维度以五朵小红花为满档：五朵表示该维度无可指认的失误且有突出表现，四朵表示整体达到要求、存在一处明确的待改进点，三朵及以下均附具体证据。',
            '依据文本：IELTS Speaking Band Descriptors（public version），IDP IELTS、British Council与Cambridge University Press & Assessment；'
            'Cambridge English Pre A1 Starters考试大纲及词汇表、语法结构清单，Cambridge University Press & Assessment；'
