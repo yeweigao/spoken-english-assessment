@@ -797,6 +797,10 @@ def render(d, capture=None, out=None):
     # ---------- 4. what to do next ----------
     ny = gy - 34
     head(ny, '英语学习小建议')
+    # where the advice comes from, in one grey line at the heading's right end (as the detailed page
+    # notes its benchmarks): the four tasks of the Starters speaking test are this stage's directions
+    _adv = '练习方向参照剑桥 Pre A1 Starters 口语考试的四项任务'
+    text(W - M - sw(_adv, 'SCS', 8.5), ny + 1, _adv, 'SCS', 8.5, GREY)
     _gw = sw(d['goal'], 'SCS', 10.5)
     c.setFillColor(HexColor(T['chip_shadow'])); c.rect(M + 59, ny - 36, _gw + 18, 21, stroke=0, fill=1)
     c.setFillColor(HexColor(T['field'])); c.rect(M + 56, ny - 33, _gw + 18, 21, stroke=0, fill=1)
@@ -868,6 +872,7 @@ def render(d, capture=None, out=None):
            '发音准确度考查词语能否被准确辨识（朗读任务对照原文），参照IELTS Pronunciation；'
            '流利度考查语速、长停顿、重复与填充词，参照IELTS Fluency and Coherence；'
            '语调与重音考查句末升降与语句起伏，参照IELTS Pronunciation。'
+           '英语学习小建议的练习方向参照Starters口语考试的四项任务：听懂指令并指认、看图回答问题、描述一样事物（Tell me about）、回答关于自己的问题，难度按孩子现阶段的水平确定。'
            '各维度以五朵小红花为满档：五朵表示该维度无可指认的失误且有突出表现，四朵表示整体达到要求、存在一处明确的待改进点，三朵及以下均附具体证据。',
            '依据文本：IELTS Speaking Band Descriptors（public version），IDP IELTS、British Council与Cambridge University Press & Assessment；'
            'Cambridge English Pre A1 Starters考试大纲及词汇表、语法结构清单，Cambridge University Press & Assessment；'
