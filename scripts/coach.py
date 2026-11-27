@@ -143,9 +143,12 @@ def check(d):
     allw = [w for t in tgts for w in words_of[t]]
     tips = [rows[t]['tip'] for t in tgts]
     for where, text in places:
+        for tp in tips:                       # a table line may itself hold 「；」: keep it whole while splitting
+            text = text.replace(tp, tp.replace('；', '，'))
+        tips_ = [tp.replace('；', '，') for tp in tips]
         for sen in _sentences(text):
             hit = next((k for k in ARTIC if k in sen), None)
-            if hit and not any(tp in sen for tp in tips):
+            if hit and not any(tp in sen for tp in tips_):
                 raise ValueError(f'{where}讲了发音部位（「{hit}」），但不是纠音表的说法：这一句请照抄'
                                  + ' 或 '.join(f'「{tp}」' for tp in tips) + '，或删掉发音部位只留练法')
         for sen in _sentences(text):
