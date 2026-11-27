@@ -350,6 +350,10 @@ def validate(d):
 PHOTO_W, PHOTO_H = 96, 112
 PHOTO_X, PHOTO_TOP = W - M - PHOTO_W + 4, H - 28
 
+def game_h(g):
+    """Height of one 在家练 row: 24pt, plus 13pt for every extra line its how-to wraps to."""
+    return 24 + 13 * (len(wrap(g[1], 'SCS', 10, CW - 168)) - 1)
+
 def note_lines(d):
     tch = d.get('teacher')
     if not tch:
@@ -786,7 +790,7 @@ def render(d, capture=None, out=None):
     tch = d.get('teacher')
     # spacing steps down only as far as the page needs: (gap name->reading, leading, gap between rows)
     _rows = [max(len(wrap(x[3], 'SCS', 9.5, DESC_W)) for x in (d['dims'][r], d['dims'][r + 3])) for r in range(3)]
-    _below = 34 + 62 + 24 * len(d['games'])          # 英语学习小建议 + the games, measured as drawn below
+    _below = 34 + 62 + sum(game_h(g) for g in d['games'])   # 英语学习小建议 + the games, measured as drawn below
     for RT, RL, RG in ((17, 14, 16), (16, 13.5, 14), (15, 13, 12), (14, 12.5, 10)):
         if gy - sum(RT + n_ * RL + RG for n_ in _rows) - _below >= FLOOR: break
     for row in range(3):                 # each row as tall as its longer reading
@@ -838,7 +842,7 @@ def render(d, capture=None, out=None):
         c.setStrokeColor(INK); c.setLineWidth(1.1); c.roundRect(bx, gy - 1.5, 11, 11, 2.5, stroke=1, fill=0)
         text(bx + 20, gy, gn, 'SCB', 10.5, INK)
         para(M + 168, gy, gd, 'SCS', 10, INK, maxw=CW - 168, leading=13)
-        gy -= 24
+        gy -= game_h((gn, gd))             # a how-to that wraps pushes the next game down
 
     # the page keeps only what a parent reads: shape, evidence, teacher's voice, actions.
     # The full transcript stays in case.json as the record — it is not printed on this page.
