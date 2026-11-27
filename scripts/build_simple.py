@@ -177,7 +177,7 @@ def wrap(s, font, size, maxw):
 #   python3 build_simple.py [case.json]      (default: ./case.json; photo, audio_data.json beside it)
 # Fields: name, pro (她/他), topic, date, task ("speak" | "read"), photo, theme (six macaron
 # keys), overview[2–4], mark[], dims[6 × [name, verdict word, flowers, reading]], goal,
-# games[3 × [name, how]], script, school (which kindergarten logo), focus_sound, teacher{comment, sign}.
+# games[3 × [name, how]], script, school (kindergarten logo; default 金梦), focus_sound, teacher{comment, sign}.
 # The recording length on the page comes from audio_data.json (50 ms windows), so it can't drift.
 import sys
 CASE_FILE = os.path.abspath(next((a for a in sys.argv[1:] if not a.startswith('--')), 'case.json'))
@@ -220,6 +220,7 @@ FOOT_TOP = 72                # the fine-print band (logos + standards) runs from
 FLOOR = 116                  # content stops above this: the voice hill and its plants live below
 BRAND = os.path.normpath(os.path.join(BASE, '..', 'assets', 'brand'))
 KG_DIR = os.path.join(BRAND, 'kindergartens')
+DEFAULT_SCHOOL = '金梦'           # case.json without "school" gets this kindergarten's logo
 
 def kindergartens():
     """Kindergartens whose logo ships with the skill: {name in case.json: logo file}. Add a school by
@@ -232,7 +233,7 @@ def kindergartens():
 def school_logo(d):
     if d.get('school_logo'):
         return os.path.join(CASE, d['school_logo'])
-    f = kindergartens().get(str(d.get('school') or '').strip())
+    f = kindergartens().get(str(d.get('school') or DEFAULT_SCHOOL).strip())
     return os.path.join(KG_DIR, f) if f else None
 OVER_X = M + 268             # overview / teacher's-note column
 OVER_W = W - M - OVER_X
@@ -285,9 +286,9 @@ def validate(d):
         raise ValueError(f"找不到照片 {d['img']}：放进案例目录（视频用 pick_frame.py 选一帧），或改 case.json 的 photo")
     if d.get('task', 'speak') not in ('speak', 'read'):
         raise ValueError('task 只能是 speak（自由表达）或 read（朗读现成文本）')
-    if not d.get('school_logo') and str(d.get('school') or '').strip() not in kindergartens():
-        raise ValueError('case.json 写 school（页脚右边放哪个园的标志）：' + ' / '.join(kindergartens()) +
-                         '；开工前问老师是哪个园，一批孩子问一次。新园所把透明底 PNG 放进 assets/brand/kindergartens/ 并登记到 index.json')
+    if not d.get('school_logo') and str(d.get('school') or DEFAULT_SCHOOL).strip() not in kindergartens():
+        raise ValueError(f'school「{d.get("school")}」没有登记：可选 ' + ' / '.join(kindergartens()) +
+                         '（不写默认金梦）。新园所把透明底 PNG 放进 assets/brand/kindergartens/ 并登记到 index.json')
     if d.get('theme') not in THEMES:
         raise ValueError('theme 只能是 ' + ' / '.join(f'{k}（{v["label"]}）' for k, v in THEMES.items()))
     tch = d.get('teacher')
