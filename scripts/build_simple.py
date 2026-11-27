@@ -177,7 +177,7 @@ def wrap(s, font, size, maxw):
 #   python3 build_simple.py [case.json]      (default: ./case.json; photo, audio_data.json beside it)
 # Fields: name, pro (她/他), topic, date, task ("speak" | "read"), photo, theme (six macaron
 # keys), overview[2–4], mark[], dims[6 × [name, verdict word, flowers, reading]], goal,
-# games[3 × [name, how]], script, teacher{comment, sign} (optional, real source only).
+# games[3 × [name, how]], script, school (which kindergarten logo), focus_sound, teacher{comment, sign}.
 # The recording length on the page comes from audio_data.json (50 ms windows), so it can't drift.
 import sys
 CASE_FILE = os.path.abspath(next((a for a in sys.argv[1:] if not a.startswith('--')), 'case.json'))
@@ -219,6 +219,21 @@ E = 18                       # inner edge of the board frame: kept inside a home
 FOOT_TOP = 72                # the fine-print band (logos + standards) runs from the frame up to here
 FLOOR = 116                  # content stops above this: the voice hill and its plants live below
 BRAND = os.path.normpath(os.path.join(BASE, '..', 'assets', 'brand'))
+KG_DIR = os.path.join(BRAND, 'kindergartens')
+
+def kindergartens():
+    """Kindergartens whose logo ships with the skill: {name in case.json: logo file}. Add a school by
+    dropping its transparent PNG into assets/brand/kindergartens/ and one line into index.json."""
+    try:
+        return json.load(open(os.path.join(KG_DIR, 'index.json'), encoding='utf-8'))
+    except Exception:
+        return {}
+
+def school_logo(d):
+    if d.get('school_logo'):
+        return os.path.join(CASE, d['school_logo'])
+    f = kindergartens().get(str(d.get('school') or '').strip())
+    return os.path.join(KG_DIR, f) if f else None
 OVER_X = M + 268             # overview / teacher's-note column
 OVER_W = W - M - OVER_X
 NOTE_X = OVER_X + 4          # the sticky note sits a hair inside the column
@@ -270,6 +285,9 @@ def validate(d):
         raise ValueError(f"找不到照片 {d['img']}：放进案例目录（视频用 pick_frame.py 选一帧），或改 case.json 的 photo")
     if d.get('task', 'speak') not in ('speak', 'read'):
         raise ValueError('task 只能是 speak（自由表达）或 read（朗读现成文本）')
+    if not d.get('school_logo') and str(d.get('school') or '').strip() not in kindergartens():
+        raise ValueError('case.json 写 school（页脚右边放哪个园的标志）：' + ' / '.join(kindergartens()) +
+                         '；开工前问老师是哪个园，一批孩子问一次。新园所把透明底 PNG 放进 assets/brand/kindergartens/ 并登记到 index.json')
     if d.get('theme') not in THEMES:
         raise ValueError('theme 只能是 ' + ' / '.join(f'{k}（{v["label"]}）' for k, v in THEMES.items()))
     tch = d.get('teacher')
@@ -320,6 +338,20 @@ def validate(d):
         if not (isinstance(n, int) and 0 <= n <= 5): raise ValueError(f'{nm} 的花数须为 0–5')
         if len(wrap(desc, 'SCS', 9.5, DESC_W)) > 3: raise ValueError(f'「{nm}」解读超过三行，请精简')
     if len(d['games']) != 3: raise ValueError('games 须为 3 个')
+    vw = video_words(d)                      # 英语学习小建议 is for the stage, not homework on this video
+    if vw:
+        hit = [w for w in re.findall(r"[A-Za-z']{3,}", d['goal']) if w.lower() in vw]
+        if hit:
+            raise ValueError(f'小目标用了视频里的词 {"、".join(dict.fromkeys(hit))}：小目标写这一阶段要到达的能力'
+                             f'（如从单句到连成一段），发音写音名，不写视频里的具体词')
+        for gn, gd in d['games']:
+            hit = [w for w in re.findall(r"[A-Za-z']{3,}", gn) if w.lower() in vw]
+            if hit:
+                raise ValueError(f'在家练「{gn}」拿视频里的词起名：游戏是这一阶段的日常练习，名字和内容都不围着视频转')
+        used = sorted({w.lower() for g in d['games'] for w in re.findall(r"[A-Za-z']{3,}", g[1]) if w.lower() in vw})
+        if len(used) > 2:
+            raise ValueError(f'在家练用了 {len(used)} 个视频里的词（{"、".join(used)}）：建议按这一阶段该练什么来写，'
+                             f'用孩子日常就会碰到的说法，不把视频的内容再练一遍')
     for gn, _ in d['games']:
         if sw(gn, 'SCB', 10.5) > 78:                   # the name column runs from M+84 to the description at M+168
             raise ValueError(f'在家练游戏名「{gn}」太长，会压到说明：游戏名控制在五六个字（英文词算两三个字）')
@@ -349,6 +381,17 @@ def validate(d):
 
 PHOTO_W, PHOTO_H = 96, 112
 PHOTO_X, PHOTO_TOP = W - M - PHOTO_W + 4, H - 28
+
+# everyday words any advice may use; anything else the child said in the video marks the advice as video-bound
+COMMON_EN = set("""a an the i you he she it we they me my your his her our their is am are was were be do does did
+can have has like and or but to in on at of for with this that these those what where who how yes no not
+please thank thanks hello hi bye goodbye good morning night ok okay let lets go come look see say said
+one two three four five six seven eight nine ten first then next last""".split())
+
+def video_words(d):
+    """Content words the child said or read in this recording (script, and the book text for read-alouds)."""
+    txt = ' '.join(str(d.get(k) or '') for k in ('script', 'original'))
+    return {w.lower() for w in re.findall(r"[A-Za-z']{3,}", txt)} - COMMON_EN
 
 def game_h(g):
     """Height of one 在家练 row: 24pt, plus 13pt for every extra line its how-to wraps to."""
@@ -853,8 +896,8 @@ def render(d, capture=None, out=None):
     # It sits on the hill's own ground (the band below FOOT_TOP), so the scene stays one picture.
     # Logos are transparent PNGs drawn straight onto the ground — no chip behind them (never
     # recoloured or stretched: contain-fit). The
-    # kindergarten logo comes from case.json "school_logo" (or assets/brand/kindergarten-logo.png);
-    # until there is one, a dashed placeholder keeps its place.
+    # kindergarten logo is picked by case.json "school" from assets/brand/kindergartens/index.json
+    # (or given directly as "school_logo"); a missing file leaves a dashed placeholder.
     def logo_chip(x, w, path, label):
         y0, h = E + 4, FOOT_TOP - E - 10
         if path and os.path.isfile(path):
@@ -868,9 +911,7 @@ def render(d, capture=None, out=None):
             c.setFillColor(GREY); c.setFont('SCS', 6); c.drawCentredString(x + w / 2, y0 + h / 2 - 2, label)
     _lw, _kw = 76, 50                  # the group's logo is wide, a kindergarten's is usually a crest
     logo_chip(E + 8, _lw, os.path.join(BRAND, 'cieg-logo.png'), '集团标志')
-    _sl = d.get('school_logo')
-    _sl = os.path.join(CASE, _sl) if _sl else os.path.join(BRAND, 'kindergarten-logo.png')
-    logo_chip(W - E - 8 - _kw, _kw, _sl, '幼儿园标志')
+    logo_chip(W - E - 8 - _kw, _kw, school_logo(d), '幼儿园标志')
     # the fine print, in the register of an exam's published marking notes: paragraph one is the
     # rule (what each dimension examines and which IELTS / Starters description it is set against,
     # what the flower counts mean), paragraph two the source documents. Plain weight throughout,

@@ -16,8 +16,8 @@ licence beside it), that
      words that carry the sound;
   4. any sentence in 老师说 / 小目标 / 在家练 that talks about how to move the tongue, lips, teeth or
      breath contains the table's 纠音说法 for that sound, word for word;
-  5. at most two focus sounds; the practice words (mark) come from their words, 小目标 names each
-     (word or sound name), and each has at least one game that uses its words or contrast pairs.
+  5. at most two focus sounds; 小目标 names each by its sound name (not the video's word — the advice
+     is for the stage), and each has a game that practises it with common words carrying it.
 Run directly to self-check the table:  python3 scripts/coach.py"""
 import os, re
 
@@ -161,19 +161,28 @@ def check(d):
                     raise ValueError(f'{where}把 {"、".join(bad)} 和 {"、".join(x for x in run if x.lower() in allw)} 一起当「{name}」练，'
                                      f'但 {"、".join(bad)} 不含这个音（词典核对）：删掉或换成含这个音的词')
     marks = [m.lower() for m in d.get('mark', [])]
-    stray = [m for m in marks if m not in allw]
+    stray = [m for m in marks if not any(carries(t, m) for t in tgts if phones(m))]
     if stray:
-        raise ValueError(f'练习词 {"、".join(stray)} 不在 focus_sound 的例词里：练习词从重点音的例词里取')
+        raise ValueError(f'练习词 {"、".join(stray)} 不含重点音：练习词可以不写；写就写含这个音的常用词')
     has = lambda s, ws: any(re.search(rf'(?<![A-Za-z]){re.escape(w)}(?![A-Za-z])', s, re.I) for w in ws)
+    goal = d.get('goal', '')
     for t in tgts:
-        goal = d.get('goal', '')
-        named = t in goal if not t.isascii() or '-' in t else has(goal, [t])   # the row key: 'u-e', '词尾辅音', '重音' …
-        if not (has(goal, words_of[t]) or named):
-            raise ValueError(f'小目标没有点到重点音「{rows[t]["name"]}」：写上一个例词（{"、".join(words_of[t])}）'
-                             f'或音名「{t}」，小目标和在家练说同一件事')
-        pair_words = [x.lower() for x in re.findall(r"[A-Za-z]+", rows[t]['pairs'])]
-        if not any(has(g, words_of[t]) or has(g, pair_words) for g in games):
-            raise ValueError(f'在家练没有一个游戏练到「{rows[t]["name"]}」：用上例词或纠音表的对比词（{rows[t]["pairs"]}）')
+        names = sound_names(t, rows)
+        if not any((n in goal) if not n.isascii() else has(goal, [n]) for n in names):
+            raise ValueError(f'小目标没有点到重点音「{rows[t]["name"]}」：用音名写（' + '、'.join(names) +
+                             '），不写视频里的具体词——小目标是这一阶段的方向')
+        def practises(g):
+            about = any(k in g for k in ARTIC + SOUND_TALK) or rows[t]['tip'] in g or any(
+                (n in g) if not n.isascii() else has(g, [n]) for n in names)
+            return about and any(len(w) > 2 and phones(w) and carries(t, w) for w in re.findall(r"[A-Za-z']+", g))
+        if not any(practises(g) for g in games):
+            raise ValueError(f'在家练没有一条练到「{rows[t]["name"]}」：写明练这个音，并用几个含这个音的常用词'
+                             f'（可取纠音表对比词：{rows[t]["pairs"]}）')
+
+def sound_names(t, rows):
+    """How a parent-facing line may name the sound: the row key and the name's lead word ('th', 'z', '词尾辅音' …)."""
+    lead = re.split(r'[\s（(]', rows[t]['name'])[0]
+    return [x for x in dict.fromkeys([t, lead]) if x]
 
 if __name__ == '__main__':                     # self-check: in every contrast pair one word carries the sound
     rows = table(); bad = 0

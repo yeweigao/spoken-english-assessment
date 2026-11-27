@@ -6,10 +6,8 @@
   "task": "speak",
   "photo": "photo.jpg",
   "theme": "cream",
-  "mark": [
-    "eight",
-    "salad"
-  ],
+  "school": "学府里",
+  "mark": [],
   "dims": [
     [
       "词汇",
@@ -48,19 +46,19 @@
       "已建立陈述句降调，跨度 11.6 个半音，句尾稳稳落下；双音节词重音还需巩固，如 salad 重音落在后面。"
     ]
   ],
-  "goal": "从讲清几个步骤，走到讲一个完整的小故事；词尾音一个不丢，如 eight、salad。",
+  "goal": "从讲清几个步骤，走向讲一个完整的小故事；说话时词尾辅音收完整。",
   "games": [
     [
-      "家务小导播",
-      "做饭、收玩具时请她用 first、then、last 当小导播指挥你，你照着做。"
+      "生活小导播",
+      "每天挑一件日常小事，请她用英语按顺序说给你听，你照着做。"
     ],
     [
-      "尾巴不掉队",
-      "把 eight、cat、bed 写在纸上，她每说一个词，你听清尾巴的音就打个勾。"
+      "尾音对一对",
+      "和她轮流说 bead 和 bee、card 和 car，听出词尾的音有没有收住。"
     ],
     [
-      "我自己来",
-      "教她 by myself，穿衣、刷牙时让她说 I can do it by myself。"
+      "睡前讲一讲",
+      "睡前一起读一本英文绘本，读完请她用一两句英语说说发生了什么。"
     ]
   ],
   "script": "Hello everyone, my name is Apple. I want to set a password for me. First, I choose two words: chocolate and salad. Then I choose two letters C E from chocolate. I choose two letters A D from salad. Next, I choose two numbers: four and eight. And last, I put them together. My password is 8ADEC4. Thank you!",

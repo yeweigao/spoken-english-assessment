@@ -42,8 +42,7 @@ python3 scripts/build_detail.py            # 详细版两页 report.pdf（案例
 - `references/` — 六维量规、对外表述边界（内部）、文字与版式体系、纠音表 `pronunciation-coach.md`（报告里讲发音部位只能照抄这张表）
 - `scripts/batch_check.py` — 一批孩子做完后跨报告查重（小目标、在家练、老师说里成批重复的句子、游戏名和开头），列出要重写的孩子
 - `assets/dict/` — CMU Pronouncing Dictionary（`cmudict.dict`，BSD 式许可，原文 `LICENSE-cmudict.txt`），`scripts/coach.py` 用它核对纠音例词真含目标音；随包分发，不需联网
-- `assets/brand/` — 品牌标志（`cieg-logo.png` 集团、`kindergarten-logo.png` 幼儿园），RGBA 透明底 PNG，随包分发；换园所 logo 时把新图覆盖 `kindergarten-logo.png` 或在 case.json 写 `"school_logo": "你的图.png"`。白底图用 `python3 scripts/make_logo_transparent.py 输入图 输出.png [预览底色]` 抠成透明（盾形等内部白底会保留，只删外圈白）。
+- `assets/brand/` — 品牌标志，RGBA 透明底 PNG，随包分发：`cieg-logo.png` 集团；`kindergartens/` 各园所（金梦 `jinmeng.png`、学府里 `xuefuli.png`，`index.json` 登记），case.json 写 `"school": "金梦"` / `"学府里"` 切换，加新园所就放图并登记一行。白底图用 `python3 scripts/make_logo_transparent.py 输入图 输出.png [预览底色]` 抠成透明（盾形等内部白底会保留，只删外圈白）。
 - `assets/fonts/` — 报告字体**不入 git**（约 22 MB）：跑 `download_fonts.py` 从 Google Fonts 取并实例化静态字重（思源黑体、站酷快乐体、Inter、Patrick Hand，均为 SIL OFL，许可文本 `OFL-*.txt` 已入库）。打包 zip 分发 skill 时把该目录一并放进去，再用 `install_fonts.py` 装到老师电脑。
 
   手动下载：Noto Sans SC https://fonts.google.com/noto/specimen/Noto+Sans+SC · ZCOOL KuaiLe https://fonts.google.com/specimen/ZCOOL+KuaiLe · Inter https://fonts.google.com/specimen/Inter · Patrick Hand https://fonts.google.com/specimen/Patrick+Hand
-- `assets/brand/` — 页脚标志：`cieg-logo.png`（加拿大国际教育集团）、`kindergarten-logo.png`（默认幼儿园，可由 case.json 的 `school_logo` 换成各园自己的），均为透明底 PNG
