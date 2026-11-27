@@ -7,7 +7,8 @@ this — only the batch does — so the batch is checked as a whole.
 
     python3 scripts/batch_check.py cases/            (or any folder holding <child>/case.json)
 
-Looks at 小目标, 在家练 (names and how-tos) and 老师说 — the parts meant to be written for this child:
+Looks at 小目标, 在家练 (names and how-tos) and 老师说 — the parts meant to be written for this child —
+and at the six readings for stock words that most lines lean on:
 whole sentences shared by many children, short stock words that most of them lean on (最难得、继续这样),
 game names, and openings. English words are masked
 (so only the Chinese frame is compared) and the pronunciation table's own 纠音说法 lines are taken
@@ -28,6 +29,7 @@ def limits(n):
                 opening=max(3, round(n * 0.20)))
 
 STOCK_FIELDS = ('老师说', '小目标')   # short stock words (最难得、继续这样、这份……) make every note read alike
+READING_SHARE = 0.25                 # a stock word in more than a quarter of all readings: every line ends alike
 
 def short_grams(s, k=3):
     return {s[i:i + k] for i in range(len(s) - k + 1)
@@ -128,12 +130,29 @@ def main():
             if len(whos) > lim['opening']:
                 flag(f'{f}开头', op + '…', whos, lim['opening'])
 
+    # the six readings: counted per reading, not per child (each child has six), so a word that most
+    # readings lean on (还需巩固 at the end of every line) shows up even though each child uses it once
+    rd = defaultdict(set); total = 0
+    for who, d in cases:
+        for k, x in enumerate(d.get('dims', [])):
+            total += 1
+            for g in short_grams(clean(str(x[3]), tl, str(d.get('name') or '')), 4):
+                rd[g].add((who, k))
+    shown = []
+    for g, refs in sorted(rd.items(), key=lambda kv: -len(kv[1])):
+        if len(refs) <= READING_SHARE * total or any(g[:3] == s_[1:] or g[1:] == s_[:3] for s_ in shown):
+            continue
+        shown.append(g)
+        whos = {w for w, _ in refs}
+        hits.append(f'逐项解读套话「{g}」出现在 {len(refs)} 条解读里（共 {total} 条，上限 {int(READING_SHARE * total)}）')
+        for w in whos:
+            redo[w].append(f'逐项解读套话「{g}」')
     if not hits:
         print(f'{n} 份报告，没有成批重复的句子、游戏名或开头'); return 0
     print(f'{n} 份报告里有成批重复（纠音表原话不算）：\n')
     for h in hits:
         print('  - ' + h)
-    print(f'\n要重写的孩子（{len(redo)} 份）——按各自的阶段、最需要补的维度、视频里看得出的兴趣重新写，'
+    print(f'\n要重写的孩子（{len(redo)} 份）——按各自的水平和最需要补的地方重新写，'
           f'不换个说法套同一个句式：')
     for w, why in sorted(redo.items()):
         print(f'  {w}：' + '；'.join(sorted(set(why))[:4]))
