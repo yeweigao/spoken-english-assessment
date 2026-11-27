@@ -7,7 +7,9 @@ this — only the batch does — so the batch is checked as a whole.
 
     python3 scripts/batch_check.py cases/            (or any folder holding <child>/case.json)
 
-Looks at 小目标, 在家练 (names and how-tos) and 老师说 — the parts meant to be written for this child. English words are masked
+Looks at 小目标, 在家练 (names and how-tos) and 老师说 — the parts meant to be written for this child:
+whole sentences shared by many children, short stock words that most of them lean on (最难得、继续这样),
+game names, and openings. English words are masked
 (so only the Chinese frame is compared) and the pronunciation table's own 纠音说法 lines are taken
 out first: those are meant to be identical. Exit code 1 and a list of children to rewrite when
 something repeats too often; fix their case.json, rebuild those reports, run this again."""
@@ -21,8 +23,15 @@ N = 8                      # a shared run of this many Chinese characters counts
 FIELDS = ('小目标', '在家练', '老师说')      # the readings share the rubric's terms on purpose (已建立陈述句降调 …)
 
 def limits(n):
-    """How many children may share a phrase / a game name / an opening before it is flagged."""
-    return dict(phrase=max(3, round(n * 0.15)), name=max(3, round(n * 0.10)), opening=max(3, round(n * 0.20)))
+    """How many children may share a phrase / a stock word / a game name / an opening before it is flagged."""
+    return dict(phrase=max(3, round(n * 0.15)), stock=max(4, round(n * 0.50)), name=max(3, round(n * 0.10)),
+                opening=max(3, round(n * 0.20)))
+
+STOCK_FIELDS = ('老师说', '小目标')   # short stock words (最难得、继续这样、这份……) make every note read alike
+
+def short_grams(s, k=3):
+    return {s[i:i + k] for i in range(len(s) - k + 1)
+            if all('\u4e00' <= ch <= '\u9fff' for ch in s[i:i + k])}
 
 def tips():
     try:
@@ -66,6 +75,7 @@ def main():
         print(f'{folder} 里只有 {n} 份，批量查重至少要 4 份'); return 0
     lim, tl = limits(n), tips()
     phrase = {f: defaultdict(set) for f in FIELDS}
+    stock = {f: defaultdict(set) for f in STOCK_FIELDS}
     names, openings = defaultdict(set), {f: defaultdict(set) for f in ('小目标', '老师说')}
     for who, d in cases:
         nm = str(d.get('name') or '')
@@ -76,6 +86,9 @@ def main():
             c = clean(str(s), tl, nm)
             for g in grams(c):
                 phrase[f][g].add(who)
+            if f in stock:
+                for g in short_grams(c):
+                    stock[f][g].add(who)
             if f in openings and c.strip():
                 openings[f][c.strip('◇ ，')[:6]].add(who)
         for g in d.get('games', []):
@@ -100,6 +113,13 @@ def main():
             if same:
                 continue
             shown.append((g, whos)); flag(f'{f}句子', g, whos, lim['phrase'])
+    for f in STOCK_FIELDS:
+        shown = []
+        for g, whos in sorted(stock[f].items(), key=lambda kv: -len(kv[1])):
+            if len(whos) <= lim['stock'] or any(len(whos & w_) >= 0.8 * len(whos) and (g[:2] == s_[1:] or g[1:] == s_[:2])
+                                                for s_, w_ in shown):
+                continue
+            shown.append((g, whos)); flag(f'{f}套话', g, whos, lim['stock'])
     for nm_, whos in names.items():
         if len(whos) > lim['name']:
             flag('在家练游戏名', nm_, whos, lim['name'])

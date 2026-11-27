@@ -39,7 +39,7 @@ python3 scripts/build_detail.py            # 详细版两页 report.pdf（案例
 
 - `SKILL.md` / `skill.yaml` — 技能规程（可直接作为 Muse skill 安装到 `~/workspace/custom-skills/` 或 `~/.claude/skills/` 类目录）
 - `scripts/` — 抽帧选图、识别、声学分析、声音评分、简版与正/背面生成、合并、字体下载、内部依据文件
-- `references/` — 六维量规、对外表述边界（内部）、文字与版式体系、纠音表 `pronunciation-coach.md`（报告里讲发音部位只能照抄这张表）
+- `references/` — 六维量规、老师说与小建议的写作规范 `writing-spec.md`（目标、成功标准、约束）、对外表述边界（内部）、文字与版式体系、纠音表 `pronunciation-coach.md`（报告里讲发音部位只能照抄这张表）
 - `scripts/batch_check.py` — 一批孩子做完后跨报告查重（小目标、在家练、老师说里成批重复的句子、游戏名和开头），列出要重写的孩子
 - `assets/dict/` — CMU Pronouncing Dictionary（`cmudict.dict`，BSD 式许可，原文 `LICENSE-cmudict.txt`），`scripts/coach.py` 用它核对纠音例词真含目标音；随包分发，不需联网
 - `assets/brand/` — 品牌标志，RGBA 透明底 PNG，随包分发：`cieg-logo.png` 集团；`kindergartens/` 各园所（金梦 `jinmeng.png`、学府里 `xuefuli.png`，`index.json` 登记），case.json 写 `"school": "金梦"` / `"学府里"` 切换（不写默认金梦），加新园所就放图并登记一行。白底图用 `python3 scripts/make_logo_transparent.py 输入图 输出.png [预览底色]` 抠成透明（盾形等内部白底会保留，只删外圈白）。

@@ -19,8 +19,9 @@ references/type-system.md, section 简版一页):
 - 老师说 is always there, signed with the name the teacher gives: the AI writes it as the child's
   stage summary of spoken English with real encouragement — not a replay of this video, no
   "I watched the video", nothing that puts the teacher in the room (the parent filmed it).
-- Everything on the page judges the child's spoken English level only: a song, a show or a game
-  is just the carrier of the evidence, never judged as singing or acting.
+- What the teacher's note and the advice should say is set in references/writing-spec.md as goals
+  and constraints; this script checks only hard rules (layout, no measurements, the pronunciation
+  table and dictionary), never wording.
 - Say each thing once: the radar carries dimension names only (the verdict
   word lives in the readings), the overview speaks in conclusions without
   measurements, the readings carry the evidence. validate() enforces this.
@@ -243,19 +244,6 @@ NOTE_LEAD = 13
 COLX = (M, M + 272)          # readings: content dimensions left, sound dimensions right
 DESC_W = 222
 MEASURE = re.compile(r'\d+(\.\d+)?\s*(秒|个词|个半音|半音|音节|次|个|%|dB|分贝|Hz)')
-# 老师说 is the child's stage summary with encouragement, not a review of this video. Words that put
-# the teacher (or an audience) in the room give the report away to the parent who filmed it;
-# narrating the viewing or the moment (今天、刚才) turns a summary back into a replay
-IN_ROOM = re.compile(r'课上|课堂|班上|全班|小朋友们|大家|现场|当场|在场|台下|台上|听众|观众|我们班|我在旁边'
-                     r'|看(了|完).{0,40}?(视频|录音)|(这段|这次|这个)(视频|录音)|视频里|录音里|今天|刚才|一开口')
-# 老师说 encourages; it does not advise — next steps and practice live in 英语学习小建议
-ADVICE = re.compile(r'下一步|接下来|还需|需要|巩固|多练|练准|练熟|练稳|在家|回家|对着镜子|建议|要注意')
-# a song or a show is only the carrier of the evidence: the conclusions are English ability (words,
-# sentences, sounds, flow, stress), never how well the song or the show went, nor how it was sung
-# or acted (backstops — SKILL.md sets the focus from the first listen)
-PERFORMANCE = re.compile(r'唱|歌|表演|节目|演出|舞|手势|动作|一句不落|忘词')
-NOT_ENGLISH = re.compile(r'(?<![发读念元辅长短重])音准(?!确)|跑调|走调|调子|唱功|旋律|节拍|拍子|打拍|高音|低音|气息|换气|嗓|舞蹈|动作到位|表演力|台风')
-
 def lead_of(line):
     """'最棒的：…' -> '最棒的：' (a lead-in of up to six characters before a full-width colon)."""
     k = line.find('：')
@@ -307,15 +295,6 @@ def validate(d):
             run = common_run(cm, desc)
             if len(run) >= 7:
                 raise ValueError(f'老师说与「{nm}」解读重复了「{run}」：换一种说法，或删掉其中一处')
-        import coach
-        m = ADVICE.search(cm) or re.search('|'.join(coach.ARTIC), cm)
-        if m:
-            raise ValueError(f'老师说写了「{m.group()}」：老师说是鼓励式的阶段总评，只说孩子已经做到什么、最亮眼什么、'
-                             f'学习品质和一句期许；下一步、练法、发音部位都放到英语学习小建议')
-        m = IN_ROOM.search(cm)
-        if m:
-            raise ValueError(f'老师说写了「{m.group()}」：老师说是孩子这一阶段英语口语的总评加鼓励，不复述这段视频——'
-                             f'不写成在场（课上、大家、现场），也不写「看了视频」「录音里」「今天」「刚才」')
     elif not (2 <= len(d.get('overview') or []) <= 4):
         raise ValueError('没有 teacher 时必须写 overview 2–4 条（有老师评语时右栏被评语占用，overview 可省略）')
     if d.get('task') == 'read' and not d.get('original'):
@@ -339,38 +318,12 @@ def validate(d):
         if not (isinstance(n, int) and 0 <= n <= 5): raise ValueError(f'{nm} 的花数须为 0–5')
         if len(wrap(desc, 'SCS', 9.5, DESC_W)) > 3: raise ValueError(f'「{nm}」解读超过三行，请精简')
     if len(d['games']) != 3: raise ValueError('games 须为 3 个')
-    vw = video_words(d)                      # 英语学习小建议 is for the stage, not homework on this video
-    if vw:
-        hit = [w for w in re.findall(r"[A-Za-z']{3,}", d['goal']) if w.lower() in vw]
-        if hit:
-            raise ValueError(f'小目标用了视频里的词 {"、".join(dict.fromkeys(hit))}：小目标写这一阶段要到达的能力'
-                             f'（如从单句到连成一段），发音写音名，不写视频里的具体词')
-        for gn, gd in d['games']:
-            hit = [w for w in re.findall(r"[A-Za-z']{3,}", gn) if w.lower() in vw]
-            if hit:
-                raise ValueError(f'在家练「{gn}」拿视频里的词起名：游戏是这一阶段的日常练习，名字和内容都不围着视频转')
-        used = sorted({w.lower() for g in d['games'] for w in re.findall(r"[A-Za-z']{3,}", g[1]) if w.lower() in vw})
-        if len(used) > 2:
-            raise ValueError(f'在家练用了 {len(used)} 个视频里的词（{"、".join(used)}）：建议按这一阶段该练什么来写，'
-                             f'用孩子日常就会碰到的说法，不把视频的内容再练一遍')
     for gn, _ in d['games']:
         if sw(gn, 'SCB', 10.5) > 78:                   # the name column runs from M+84 to the description at M+168
             raise ValueError(f'在家练游戏名「{gn}」太长，会压到说明：游戏名控制在五六个字（英文词算两三个字）')
     if len(wrap(d['goal'], 'SCS', 10.5, CW - 90)) > 1: raise ValueError('goal 须一行写完')
-    for where, s in ([(f'「{x[0]}」解读', x[3]) for x in d['dims']] + [('老师说', (tch or {}).get('comment', '')), ('小目标', d['goal'])]
-                     + [(f'在家练「{g[0]}」', f'{g[0]}：{g[1]}') for g in d['games']]):
-        m = PERFORMANCE.search(s) if not where.startswith('在家练') else None
-        if m:
-            raise ValueError(f'{where}写到了「{m.group()}」：歌和表演只是取证的载体，这里写英语水平——'
-                             f'能说出哪些词和句子、哪些音已发准、连不连贯、重音语调，不写歌唱得、节目演得怎么样')
-        m = NOT_ENGLISH.search(s)
-        if m:
-            raise ValueError(f'{where}写到了「{m.group()}」：报告只评英语口语（词、句、发音、流利、语调重音），'
-                             f'不评唱得怎么样、演得怎么样；换成英语上的说法或删掉')
     pron = d['dims'][3][3] + d['goal']
     for w_ in d.get('mark', []):
-        if not re.search(r'\b' + re.escape(w_) + r'\b', d['script'], re.I):
-            raise ValueError(f'mark 里的「{w_}」不在全文里')
         if w_.lower() not in pron.lower():
             raise ValueError(f'mark 里的「{w_}」须同时出现在「发音准确度」解读或小目标里，前后才对得上')
     meta = meta_line(d)
@@ -382,17 +335,6 @@ def validate(d):
 
 PHOTO_W, PHOTO_H = 96, 112
 PHOTO_X, PHOTO_TOP = W - M - PHOTO_W + 4, H - 28
-
-# everyday words any advice may use; anything else the child said in the video marks the advice as video-bound
-COMMON_EN = set("""a an the i you he she it we they me my your his her our their is am are was were be do does did
-can have has like and or but to in on at of for with this that these those what where who how yes no not
-please thank thanks hello hi bye goodbye good morning night ok okay let lets go come look see say said
-one two three four five six seven eight nine ten first then next last""".split())
-
-def video_words(d):
-    """Content words the child said or read in this recording (script, and the book text for read-alouds)."""
-    txt = ' '.join(str(d.get(k) or '') for k in ('script', 'original'))
-    return {w.lower() for w in re.findall(r"[A-Za-z']{3,}", txt)} - COMMON_EN
 
 def game_h(g):
     """Height of one 在家练 row: 24pt, plus 13pt for every extra line its how-to wraps to."""
